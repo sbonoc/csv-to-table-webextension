@@ -46,7 +46,45 @@ See [TESTING.md](TESTING.md) for detailed testing strategy and best practices.
 
 ## 📁 Project Structure
 
-(To be defined in upcoming iterations)
+```
+src/
+├── core/                  # Domain layer (business logic, entities)
+├── application/           # Application layer (services, use cases)
+├── infrastructure/        # Infrastructure layer (config, logger, storage, messaging)
+├── background/           # Background script
+└── content/              # Content script
+
+popup/                    # Popup UI
+tests/                    # Unit, integration, E2E tests
+
+ARCHITECTURE.md                    # System architecture overview
+ARCHITECTURE_REFACTORING.md        # Detailed refactoring guide  
+REFACTORING_GUIDE.md              # Step-by-step refactoring instructions
+TESTING.md                        # Testing strategy and best practices
+```
+
+## 🏗️ Architecture
+
+This project follows a **layered architecture** with clean separation of concerns:
+
+- **Presentation Layer** (Popup): UI components and user interaction
+- **Application Layer**: Services and use cases
+- **Domain Layer**: Business logic and entities
+- **Infrastructure Layer**: Technical services (logging, storage, messaging, DI)
+
+**Read**: [ARCHITECTURE.md](ARCHITECTURE.md) for detailed diagrams and data flows.
+
+## 🔄 Code Quality & Refactoring
+
+The codebase follows best practices for:
+- Clean Architecture & SOLID Principles
+- Dependency Injection
+- Error Handling & Logging
+- Test-Driven Development
+- Gradual Refactoring
+
+**Current State**: [ARCHITECTURE_REFACTORING.md](ARCHITECTURE_REFACTORING.md)
+**Migration Path**: [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md)
 
 ## 🛠️ Technologies
 
