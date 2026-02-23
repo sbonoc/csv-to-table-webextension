@@ -41,6 +41,7 @@ coverage/
 # Playwright
 test-results/
 playwright-report/
+playwright-results/
 
 # Temporary files
 tmp/
