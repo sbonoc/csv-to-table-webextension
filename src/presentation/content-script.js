@@ -7,12 +7,12 @@
 import {
     Container,
     Logger
-} from './infrastructure/index.js';
+} from '../infrastructure/index.js';
 
 import {
     getTableFields,
     fillFields
-} from './domain/table-handler.js';
+} from '../domain/table-handler.js';
 
 // Initialize container
 const container = new Container();

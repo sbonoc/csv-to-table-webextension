@@ -10,7 +10,7 @@ import {
     StorageRepository,
     MessageBus,
     CONFIG
-} from './infrastructure/index.js';
+} from '../infrastructure/index.js';
 
 // Initialize container with default services
 const container = new Container();

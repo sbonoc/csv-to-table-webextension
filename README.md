@@ -60,7 +60,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 ```
 ┌───────────────────────────────────────────┐
 │  PRESENTATION LAYER (User Interface)      │
-│  • Popup UI (popup.html/css/js)          │
+│  • Popup UI (src/presentation/popup/)    │
 │  • Background script (messaging hub)     │
 │  • Content script (page integration)     │
 └──────────────────┬──────────────────────┘
@@ -111,13 +111,14 @@ src/
 │   ├── mapping.js          # Column mapping configuration
 │   └── table-handler.js    # HTML form field extraction & filling
 │
-├── background.js           # Background script persistence & messaging
-└── content-script.js       # Content script for web page context
-
-popup/                       # User interface
-├── popup.html              # Popup UI markup
-├── popup.css               # Popup styling
-└── popup.js                # Popup logic with service integration
+│
+└── presentation/            # User interface & messaging
+    ├── popup/
+    │   ├── popup.html      # Popup UI markup
+    │   ├── popup.css       # Popup styling
+    │   └── popup.js        # Popup logic with service integration
+    ├── background.js       # Background script persistence & messaging
+    └── content-script.js   # Content script for web page context
 
 tests/
 ├── unit/                   # Unit tests for domain logic

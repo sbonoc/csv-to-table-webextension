@@ -6,12 +6,12 @@
 import {
     Container,
     Logger
-} from '../src/infrastructure/index.js';
+} from '../../infrastructure/index.js';
 
 import {
     parseCSV,
     validateCSVData
-} from '../src/domain/csv-parser.js';
+} from '../../domain/csv-parser.js';
 
 // Initialize container and services
 const container = new Container();
