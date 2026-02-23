@@ -27,7 +27,7 @@ Current implementation status:
 ```bash
 # Clone the repository
 git clone https://github.com/sbonoc/firefox-addon-csv-to-table-filler.git
-cd csv-table-filler-firefox-addon
+cd firefox-addon-csv-to-table-filler
 
 # Install dependencies
 npm install
@@ -75,7 +75,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 ┌───────────────────────────────────────────┐
 │  PRESENTATION LAYER (User Interface)      │
 │  • Sidebar UI (src/presentation/sidebar/)│
-│  • Background script (messaging hub)     │
+│  • Background script (lifecycle + action)│
 │  • Content script (page integration)     │
 └──────────────────┬──────────────────────┘
                    │
@@ -92,7 +92,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 │  • Logger (structured logging)          │
 │  • Errors (typed error hierarchy)       │
 │  • Storage (browser.storage abstraction)│
-│  • MessageBus (event system)            │
+│  • MessageBus (utility event system)    │
 │  • Container (dependency injection)     │
 └──────────────────────────────────────────┘
 ```
@@ -100,7 +100,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 ### Key Design Patterns
 
 - **Dependency Injection**: Auto-injected services via IoC Container
-- **Event-Driven**: MessageBus for decoupled communication
+- **Event-Driven Messaging**: WebExtensions message channels with sender/action validation
 - **Error Handling**: Typed errors (CSVError, MappingError, etc)
 - **Logging**: Structured context-aware logging
 - **Repository Pattern**: StorageRepository abstracts browser.storage
@@ -183,7 +183,7 @@ The project uses a **Test Pyramid** approach with clear separation:
 - **E2E Tests** (9%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
 - **Accessibility Test**: Automated Axe Core scan focused on sidebar UI (`tests/e2e/accessibility.spec.js`)
 
-**Current Test Inventory:** 167 automated tests (140 unit, 12 integration, 15 E2E)
+**Current Test Inventory:** 170 automated tests (142 unit, 12 integration, 16 E2E)
 
 ### Run Tests
 
@@ -306,6 +306,7 @@ The extension communicates via WebExtensions messaging:
 3. **Content Layer**: Validates request, resolves target table/row mapping, updates DOM
 4. **Response**: Content script returns `success|warning|error` with message and counts
 5. **Sidebar Feedback**: UI shows status and keeps mapping/table highlight in sync
+6. **Mapping Persistence**: Mapping is saved via `browser.storage.local` (`csvMapping` key)
 
 Messages are validated and sanitized; unauthorized senders/actions are rejected.
 
@@ -340,7 +341,8 @@ Configuration is centralized in `src/infrastructure/config.js`:
 CONFIG.STORAGE_KEYS = {
     MAPPING: 'csvMapping',
     CSV_HISTORY: 'csvHistory',
-    APP_SETTINGS: 'appSettings'
+    APP_SETTINGS: 'appSettings',
+    LAST_USED_TABLE: 'lastUsedTableIndex'
 }
 
 CONFIG.LIMITS = {
@@ -351,7 +353,8 @@ CONFIG.LIMITS = {
 
 CONFIG.TIMEOUTS = {
     CONTENT_SCRIPT_RESPONSE: 5000,
-    FILE_LOAD: 10000
+    FILE_LOAD: 10000,
+    STORAGE_OPERATION: 3000
 }
 ```
 
@@ -391,19 +394,19 @@ The project includes **automated GitHub Actions** that:
 ### Automatic Testing & Building
 - Runs on every push to `master` and `develop` branches
 - Tests on multiple Node.js versions (18.x, 20.x)
-- **Unit tests** (84%): 140 tests for individual functions
+- **Unit tests** (84%): 142 tests for individual functions
 - **Integration tests** (7%): 12 tests for module interactions  
-- **E2E tests** (9%): 15 tests for complete user workflows in real Firefox browser
+- **E2E tests** (9%): 16 tests for complete user workflows in real Firefox browser
 
 ### Test Report with Test Pyramid
 
-After each workflow run, the job summary displays a detailed table:
+After each Node 20.x workflow job run, GitHub Actions publishes a detailed test summary in `GITHUB_STEP_SUMMARY`:
 
 | Type | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Duration |
 |------|-------|----------|----------|-----------|-----------|
-| 🏗️ Unit | 140 | 140 | 0 | 0 | ~0.13s |
+| 🏗️ Unit | 142 | 142 | 0 | 0 | ~0.12s |
 | 📦 Integration | 12 | 12 | 0 | 0 | ~0.01s |
-| 🎯 E2E | 15 | 15 | 0 | 0 | ~12.50s |
+| 🎯 E2E | 16 | 16 | 0 | 0 | ~12.87s |
 - Pass/fail/skip statistics  
 - Execution time per test type
 - Success rate and total duration
@@ -499,7 +502,7 @@ Please include:
 
 - **Lines of Code**: ~2,000 (core logic)
 - **Test Coverage**: 80%+ 
-- **Testing**: 167 automated tests (140 unit + 12 integration + 15 E2E)
+- **Testing**: 170 automated tests (142 unit + 12 integration + 16 E2E)
 - **Documentation**: Comprehensive inline comments
 - **Performance**: < 500ms for typical operations
 

@@ -46,17 +46,14 @@ export const CONFIG = {
     // Message types
     MESSAGE_TYPES: {
         // Sidebar to Content Script
-        GET_TABLE_INFO: 'GET_TABLE_INFO',
-        FILL_TABLE: 'FILL_TABLE',
+        GET_TABLE_INFO: 'getTableInfo',
+        FILL_TABLE: 'fillTable',
+        HIGHLIGHT_TARGET_TABLE: 'highlightTargetTable',
 
-        // Content Script to Sidebar
-        TABLE_INFO_RESPONSE: 'TABLE_INFO_RESPONSE',
-        FILL_TABLE_RESPONSE: 'FILL_TABLE_RESPONSE',
-
-        // Any to Background
-        SAVE_MAPPING_CONFIG: 'SAVE_MAPPING_CONFIG',
-        GET_MAPPING_CONFIG: 'GET_MAPPING_CONFIG',
-        DELETE_MAPPING: 'DELETE_MAPPING'
+        // Sidebar/Any to Background
+        SAVE_MAPPING_CONFIG: 'saveMappingConfig',
+        GET_MAPPING_CONFIG: 'getMappingConfig',
+        DELETE_MAPPING_CONFIG: 'deleteMappingConfig'
     },
 
     // Error codes

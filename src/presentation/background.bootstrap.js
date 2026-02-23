@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY_MAPPING = 'fieldMapping';
+  const STORAGE_KEY_MAPPING = 'csvMapping';
   const MAX_CSV_COLUMNS = 500;
   const ALLOWED_EXTENSION_PROTOCOLS = new Set([
     'moz-extension:',

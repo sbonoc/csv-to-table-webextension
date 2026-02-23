@@ -49,6 +49,19 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
 
+      - name: Generate consolidated test report
+        if: always()
+        run: node scripts/generate-test-report.js || true
+
+      - name: Publish test summary
+        if: always()
+        run: |
+          if [ -f test-results/summary.md ]; then
+            cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No test summary report was generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Build extension package
         run: npm run build
 

@@ -261,18 +261,32 @@ function main() {
   if (fs.existsSync(vitestJsonPath)) {
     const vitestData = parseVitestReport(vitestJsonPath);
     // For now, attribute all vitest tests to unit since we can't distinguish
-    unitReport = vitestData;
+    if (vitestData) {
+      unitReport = vitestData;
+    }
   } else {
     // Fall back to individual files
     if (fs.existsSync(unitPath)) {
-      unitReport = parseVitestReport(unitPath);
+      const parsedUnit = parseVitestReport(unitPath);
+      if (parsedUnit) {
+        unitReport = parsedUnit;
+      }
     }
     if (fs.existsSync(integrationPath)) {
-      integrationReport = parseVitestReport(integrationPath);
+      const parsedIntegration = parseVitestReport(integrationPath);
+      if (parsedIntegration) {
+        integrationReport = parsedIntegration;
+      }
     }
   }
 
-  const e2eReport = fs.existsSync(e2ePath) ? parsePlaywrightReport(e2ePath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
+  let e2eReport = { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
+  if (fs.existsSync(e2ePath)) {
+    const parsedE2E = parsePlaywrightReport(e2ePath);
+    if (parsedE2E) {
+      e2eReport = parsedE2E;
+    }
+  }
 
   // Generate summary
   const { summary, stats } = generateSummaryReport(unitReport, integrationReport, e2eReport);
@@ -287,6 +301,13 @@ function main() {
 
   // Save markdown report for GitHub Actions
   const mdReportPath = path.join(resultsDir, 'summary.md');
+  const getPyramidBar = (count, total) => {
+    if (!total || total <= 0) {
+      return '';
+    }
+    return '█'.repeat(Math.round((count / total) * 30));
+  };
+
   const mdReport = `# 🧪 Test Execution Report
 
 ## 📊 Overall Results
@@ -311,9 +332,9 @@ function main() {
 
 | Test Type | Level | Percentage | Visual |
 |-----------|-------|-----------|--------|
-| Unit | 🏗️ | ${stats.totalTests > 0 ? Math.round((stats.byType.unit.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.unit.total / stats.totalTests) * 30))} |
-| Integration | 📦 | ${stats.totalTests > 0 ? Math.round((stats.byType.integration.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.integration.total / stats.totalTests) * 30))} |
-| E2E | 🎯 | ${stats.totalTests > 0 ? Math.round((stats.byType.e2e.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.e2e.total / stats.totalTests) * 30))} |
+| Unit | 🏗️ | ${stats.totalTests > 0 ? Math.round((stats.byType.unit.total / stats.totalTests) * 100) : 0}% | ${getPyramidBar(stats.byType.unit.total, stats.totalTests)} |
+| Integration | 📦 | ${stats.totalTests > 0 ? Math.round((stats.byType.integration.total / stats.totalTests) * 100) : 0}% | ${getPyramidBar(stats.byType.integration.total, stats.totalTests)} |
+| E2E | 🎯 | ${stats.totalTests > 0 ? Math.round((stats.byType.e2e.total / stats.totalTests) * 100) : 0}% | ${getPyramidBar(stats.byType.e2e.total, stats.totalTests)} |
 
 ## Final Status
 
