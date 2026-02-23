@@ -4,6 +4,8 @@
  */
 
 import { Logger } from './infrastructure/logger.js';
+import { CONFIG } from './infrastructure/config.js';
+import { CSVError } from './infrastructure/errors.js';
 
 const logger = new Logger('CSVParser');
 
@@ -11,29 +13,64 @@ const logger = new Logger('CSVParser');
  * Parse CSV content into rows and headers
  * @param {string} csvContent - Raw CSV content
  * @returns {{headers: string[], rows: string[][]}} Parsed CSV data
- * @throws {Error} If CSV is empty or malformed
+ * @throws {CSVError} If CSV is empty, malformed, or exceeds limits
  */
 export function parseCSV(csvContent) {
   if (typeof csvContent !== 'string') {
-    throw new Error('Invalid CSV content: must be a non-empty string');
+    throw new CSVError('Invalid CSV content: must be a non-empty string', 'CSV_INVALID');
   }
 
   if (csvContent.trim() === '') {
-    throw new Error('CSV file is empty');
+    throw new CSVError('CSV file is empty', 'CSV_EMPTY');
+  }
+
+  // Validate file size
+  const sizeInBytes = new Blob([csvContent]).size;
+  if (sizeInBytes > CONFIG.LIMITS.MAX_CSV_SIZE) {
+    throw new CSVError(
+      `CSV file exceeds maximum size of ${CONFIG.LIMITS.MAX_CSV_SIZE / 1024 / 1024}MB`,
+      'CSV_TOO_LARGE',
+      { actualSize: sizeInBytes, maxSize: CONFIG.LIMITS.MAX_CSV_SIZE }
+    );
   }
 
   const lines = csvContent.split('\n').filter(line => line.trim());
   
   if (lines.length === 0) {
-    throw new Error('CSV file is empty');
+    throw new CSVError('CSV file is empty', 'CSV_EMPTY');
   }
 
   const headers = lines[0].split(',').map(h => h.trim());
-  const rows = lines.slice(1).map(line => line.split(',').map(val => val.trim()));
+  
+  // Validate column count
+  if (headers.length > CONFIG.LIMITS.MAX_CSV_COLUMNS) {
+    throw new CSVError(
+      `CSV has too many columns (${headers.length}). Maximum is ${CONFIG.LIMITS.MAX_CSV_COLUMNS}`,
+      'CSV_INVALID',
+      { columnCount: headers.length, maxColumns: CONFIG.LIMITS.MAX_CSV_COLUMNS }
+    );
+  }
 
   if (headers.length === 0) {
-    throw new Error('CSV must have at least one column');
+    throw new CSVError('CSV must have at least one column', 'CSV_INVALID');
   }
+
+  const rows = lines.slice(1).map(line => line.split(',').map(val => val.trim()));
+
+  // Validate row count
+  if (rows.length > CONFIG.LIMITS.MAX_CSV_ROWS) {
+    throw new CSVError(
+      `CSV has too many rows (${rows.length}). Maximum is ${CONFIG.LIMITS.MAX_CSV_ROWS}`,
+      'CSV_INVALID',
+      { rowCount: rows.length, maxRows: CONFIG.LIMITS.MAX_CSV_ROWS }
+    );
+  }
+
+  logger.debug('CSV parsed successfully', { 
+    headers: headers.length, 
+    rows: rows.length,
+    sizeKB: (sizeInBytes / 1024).toFixed(2)
+  });
 
   return { headers, rows };
 }

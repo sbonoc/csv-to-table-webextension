@@ -3,20 +3,25 @@
  * Handles column mapping between CSV and table fields
  */
 
+import { Logger } from './infrastructure/logger.js';
+import { MappingError } from './infrastructure/errors.js';
+
+const logger = new Logger('Mapping');
+
 /**
  * Create a mapping from CSV columns to table fields
  * @param {string[]} csvHeaders - CSV column headers
  * @param {Object} mappingConfig - Mapping configuration {csvIndex: fieldName}
  * @returns {Object} Validated mapping
- * @throws {Error} If mapping is invalid
+ * @throws {MappingError} If mapping is invalid
  */
 export function createMapping(csvHeaders, mappingConfig) {
   if (!Array.isArray(csvHeaders) || csvHeaders.length === 0) {
-    throw new Error('CSV headers must be a non-empty array');
+    throw new MappingError('CSV headers must be a non-empty array', 'INVALID_HEADERS');
   }
 
   if (!mappingConfig || typeof mappingConfig !== 'object') {
-    throw new Error('Mapping configuration must be an object');
+    throw new MappingError('Mapping configuration must be an object', 'INVALID_CONFIG');
   }
 
   const mapping = {};
@@ -25,15 +30,23 @@ export function createMapping(csvHeaders, mappingConfig) {
     const index = parseInt(csvIndex);
 
     if (isNaN(index) || index < 0 || index >= csvHeaders.length) {
-      throw new Error(`Invalid CSV column index: ${csvIndex}`);
+      throw new MappingError(`Invalid CSV column index: ${csvIndex}`, 'INDEX_OUT_OF_BOUNDS', {
+        index: csvIndex,
+        headerCount: csvHeaders.length
+      });
     }
 
     if (typeof fieldName !== 'string' || fieldName.trim() === '') {
-      throw new Error(`Field name must be a non-empty string for column index ${csvIndex}`);
+      throw new MappingError(
+        `Field name must be a non-empty string for column index ${csvIndex}`,
+        'INVALID_FIELD_NAME'
+      );
     }
 
     mapping[index] = fieldName.trim();
   });
+
+  logger.debug('Mapping created', { mappedColumns: Object.keys(mapping).length });
 
   return mapping;
 }

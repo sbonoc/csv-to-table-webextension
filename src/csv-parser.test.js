@@ -62,6 +62,18 @@ describe('CSV Parser - Unit Tests', () => {
       expect(result.headers).toEqual(['Name', 'Email', 'Age']);
       expect(result.rows).toHaveLength(0);
     });
+
+    it('should validate max columns limit', () => {
+      const csvWithTooManyCols = 'Col1,' + Array(600).fill('Col2').join(',');
+      expect(() => parseCSV(csvWithTooManyCols)).toThrow('too many columns');
+    });
+
+    it('should validate max rows limit', () => {
+      const headers = 'A,B,C';
+      const rows = Array(60000).fill('1,2,3').join('\n');
+      const csv = headers + '\n' + rows;
+      expect(() => parseCSV(csv)).toThrow('too many rows');
+    });
   });
 
   describe('validateCSVData', () => {

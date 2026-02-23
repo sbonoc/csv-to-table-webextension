@@ -3,6 +3,10 @@
  * Handles HTML table detection and field extraction
  */
 
+import { Logger } from './infrastructure/logger.js';
+
+const logger = new Logger('TableHandler');
+
 /**
  * Get all input fields from an HTML element
  * @param {Element} element - HTML element to search
@@ -24,6 +28,8 @@ export function getTableFields(element) {
       element: input
     });
   });
+
+  logger.debug('Table fields extracted', { fieldCount: fields.length });
 
   return fields;
 }
@@ -179,20 +185,29 @@ export function fillFields(container, fieldData) {
         field: fieldName,
         reason: 'Element not found'
       });
+      logger.debug('Field not found', { fieldName });
     } else {
       const success = setFieldValue(element, value);
       if (success) {
         results.filled++;
+        logger.debug('Field filled', { fieldName });
       } else {
         results.failed.push({
           field: fieldName,
           reason: 'Failed to set value'
         });
+        logger.warn('Failed to fill field', { fieldName });
       }
     }
   });
 
   results.success = results.failed.length === 0;
+
+  logger.info('Fill fields complete', {
+    filled: results.filled,
+    failed: results.failed.length,
+    success: results.success
+  });
 
   return results;
 }
