@@ -9,6 +9,122 @@ import { CSVError } from '../infrastructure/errors.js';
 
 const logger = new Logger('CSVParser');
 
+function stripBOM(content) {
+  return content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content;
+}
+
+function countDelimiterOutsideQuotes(line, delimiter) {
+  let inQuotes = false;
+  let count = 0;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function detectDelimiter(csvContent) {
+  const candidates = [',', ';', '\t'];
+  const lines = csvContent
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  if (lines.length === 0) {
+    return ',';
+  }
+
+  let bestDelimiter = ',';
+  let bestScore = -1;
+
+  candidates.forEach(candidate => {
+    const score = lines.reduce((total, line) => total + countDelimiterOutsideQuotes(line, candidate), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestDelimiter = candidate;
+    }
+  });
+
+  return bestDelimiter;
+}
+
+function parseRows(csvContent, delimiter) {
+  const rows = [];
+  let currentRow = [];
+  let currentField = '';
+  let inQuotes = false;
+
+  const pushField = () => {
+    currentRow.push(currentField.trim());
+    currentField = '';
+  };
+
+  const pushRow = () => {
+    pushField();
+    const hasData = currentRow.some(value => value.trim() !== '');
+    if (hasData) {
+      rows.push(currentRow);
+    }
+    currentRow = [];
+  };
+
+  for (let index = 0; index < csvContent.length; index += 1) {
+    const char = csvContent[index];
+    const next = csvContent[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        currentField += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      pushField();
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && next === '\n') {
+        index += 1;
+      }
+      pushRow();
+      continue;
+    }
+
+    currentField += char;
+  }
+
+  if (inQuotes) {
+    throw new CSVError('CSV contains an unterminated quoted field', 'CSV_INVALID');
+  }
+
+  if (currentField.length > 0 || currentRow.length > 0) {
+    pushRow();
+  }
+
+  return rows;
+}
+
 /**
  * Parse CSV content into rows and headers
  * @param {string} csvContent - Raw CSV content
@@ -34,14 +150,16 @@ export function parseCSV(csvContent) {
     );
   }
 
-  const lines = csvContent.split('\n').filter(line => line.trim());
-  
-  if (lines.length === 0) {
+  const normalizedContent = stripBOM(csvContent);
+  const delimiter = detectDelimiter(normalizedContent);
+  const parsedRows = parseRows(normalizedContent, delimiter);
+
+  if (parsedRows.length === 0) {
     throw new CSVError('CSV file is empty', 'CSV_EMPTY');
   }
 
-  const headers = lines[0].split(',').map(h => h.trim());
-  
+  const headers = parsedRows[0].map(h => h.trim());
+
   // Validate column count
   if (headers.length > CONFIG.LIMITS.MAX_CSV_COLUMNS) {
     throw new CSVError(
@@ -55,7 +173,7 @@ export function parseCSV(csvContent) {
     throw new CSVError('CSV must have at least one column', 'CSV_INVALID');
   }
 
-  const rows = lines.slice(1).map(line => line.split(',').map(val => val.trim()));
+  const rows = parsedRows.slice(1).map(row => row.map(val => val.trim()));
 
   // Validate row count
   if (rows.length > CONFIG.LIMITS.MAX_CSV_ROWS) {
@@ -66,10 +184,11 @@ export function parseCSV(csvContent) {
     );
   }
 
-  logger.debug('CSV parsed successfully', { 
-    headers: headers.length, 
+  logger.debug('CSV parsed successfully', {
+    headers: headers.length,
     rows: rows.length,
-    sizeKB: (sizeInBytes / 1024).toFixed(2)
+    sizeKB: (sizeInBytes / 1024).toFixed(2),
+    delimiter: delimiter === '\t' ? 'tab' : delimiter
   });
 
   return { headers, rows };

@@ -45,11 +45,11 @@ export const CONFIG = {
 
     // Message types
     MESSAGE_TYPES: {
-        // Popup to Content Script
+        // Sidebar to Content Script
         GET_TABLE_INFO: 'GET_TABLE_INFO',
         FILL_TABLE: 'FILL_TABLE',
 
-        // Content Script to Popup
+        // Content Script to Sidebar
         TABLE_INFO_RESPONSE: 'TABLE_INFO_RESPONSE',
         FILL_TABLE_RESPONSE: 'FILL_TABLE_RESPONSE',
 
@@ -81,7 +81,7 @@ export function isDevelopment() {
     if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
         return true;
     }
-    
+
     // Check if browser API is available (not in tests)
     if (typeof browser !== 'undefined' && browser.runtime && typeof browser.runtime.getURL === 'function') {
         try {
@@ -90,7 +90,7 @@ export function isDevelopment() {
             return false;
         }
     }
-    
+
     return false;
 }
 
@@ -98,7 +98,7 @@ export function isDevelopment() {
  * Get appropriate log level based on environment
  */
 export function getLogLevel() {
-    return isDevelopment() 
-        ? CONFIG.LOG_LEVEL.DEBUG 
+    return isDevelopment()
+        ? CONFIG.LOG_LEVEL.DEBUG
         : CONFIG.DEFAULTS.LOG_LEVEL_PROD;
 }

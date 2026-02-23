@@ -12,8 +12,11 @@
     "https://*/*"
   ],
   "action": {
-    "default_popup": "src/presentation/popup/popup.html",
     "default_title": "CSV to Table Filler"
+  },
+  "sidebar_action": {
+    "default_title": "CSV to Table Filler",
+    "default_panel": "src/presentation/sidebar/sidebar.html"
   },
   "content_scripts": [
     {
@@ -22,13 +25,13 @@
         "https://*/*"
       ],
       "js": [
-        "src/presentation/content-script.js"
+        "src/presentation/content-script.bootstrap.js"
       ]
     }
   ],
   "background": {
     "scripts": [
-      "src/presentation/background.js"
+      "src/presentation/background.bootstrap.js"
     ]
   },
   "icons": {

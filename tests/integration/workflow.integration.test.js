@@ -5,10 +5,10 @@ import { fillFields, setFieldValue } from '../../src/domain/table-handler.js';
 
 /**
  * Integration Tests
- * 
+ *
  * These tests verify the interaction between multiple modules
  * They test real workflows without duplicating unit test coverage
- * 
+ *
  * Test Pyramid principle: Integration tests are fewer than Unit tests
  * Shift Left principle: Each interaction is tested only once at the appropriate level
  */
@@ -242,7 +242,7 @@ describe('Complete CSV to Table Workflow', () => {
     const result = fillFields(container, mappedData);
 
     expect(result.success).toBe(true);
-    expect(document.getElementById('empFirstName').value).toBe('"Jane');
+    expect(document.getElementById('empFirstName').value).toBe('Jane, Jr.');
   });
 });
 

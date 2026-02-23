@@ -74,6 +74,50 @@ describe('CSV Parser - Unit Tests', () => {
       const csv = headers + '\n' + rows;
       expect(() => parseCSV(csv)).toThrow('too many rows');
     });
+
+    it('should parse quoted values containing commas', () => {
+      const csv = 'Name,Notes\n"John, Jr.","Likes, commas"';
+      const result = parseCSV(csv);
+
+      expect(result.headers).toEqual(['Name', 'Notes']);
+      expect(result.rows[0]).toEqual(['John, Jr.', 'Likes, commas']);
+    });
+
+    it('should parse escaped quotes inside quoted fields', () => {
+      const csv = 'Name,Notes\n"John","He said ""hello"""';
+      const result = parseCSV(csv);
+
+      expect(result.rows[0]).toEqual(['John', 'He said "hello"']);
+    });
+
+    it('should detect semicolon delimiter', () => {
+      const csv = 'Nombre;Email;Edad\nJuan;juan@example.com;30';
+      const result = parseCSV(csv);
+
+      expect(result.headers).toEqual(['Nombre', 'Email', 'Edad']);
+      expect(result.rows[0]).toEqual(['Juan', 'juan@example.com', '30']);
+    });
+
+    it('should handle BOM and CRLF line endings', () => {
+      const csv = '\uFEFFName,Email\r\nJohn,john@example.com\r\nJane,jane@example.com\r\n';
+      const result = parseCSV(csv);
+
+      expect(result.headers).toEqual(['Name', 'Email']);
+      expect(result.rows).toHaveLength(2);
+    });
+
+    it('should parse multiline quoted fields', () => {
+      const csv = 'Name,Notes\nJohn,"Line 1\nLine 2"';
+      const result = parseCSV(csv);
+
+      expect(result.headers).toEqual(['Name', 'Notes']);
+      expect(result.rows[0]).toEqual(['John', 'Line 1\nLine 2']);
+    });
+
+    it('should throw error for unterminated quoted field', () => {
+      const csv = 'Name,Notes\nJohn,"Unclosed field';
+      expect(() => parseCSV(csv)).toThrow('unterminated quoted field');
+    });
   });
 
   describe('validateCSVData', () => {

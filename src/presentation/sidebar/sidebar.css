@@ -5,18 +5,22 @@
 }
 
 body {
-    width: 500px;
+    width: 100%;
+    min-width: 280px;
+    max-width: 100%;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #f5f5f5;
     color: #333;
 }
 
 .container {
-    padding: 16px;
+    width: min(100%, 560px);
+    margin: 0 auto;
+    padding: clamp(12px, 2.5vw, 16px);
 }
 
 h1 {
-    font-size: 18px;
+    font-size: clamp(16px, 3.6vw, 18px);
     margin-bottom: 16px;
     color: #2c3e50;
     border-bottom: 2px solid #3498db;
@@ -24,15 +28,15 @@ h1 {
 }
 
 h2 {
-    font-size: 14px;
+    font-size: clamp(13px, 3vw, 14px);
     margin-bottom: 8px;
     color: #34495e;
 }
 
 .section {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     background: white;
-    padding: 12px;
+    padding: clamp(10px, 2vw, 12px);
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -47,16 +51,24 @@ label {
 input[type="file"],
 select {
     width: 100%;
+    min-height: 38px;
     padding: 8px;
     border: 1px solid #bdc3c7;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: clamp(12px, 2.8vw, 14px);
     background-color: white;
 }
 
 input[type="file"]:hover,
 select:hover {
     border-color: #3498db;
+}
+
+input[type="file"]:focus-visible,
+select:focus-visible,
+.btn:focus-visible {
+    outline: 2px solid #3498db;
+    outline-offset: 1px;
 }
 
 #mapping-container {
@@ -68,6 +80,10 @@ select:hover {
     gap: 8px;
     margin-bottom: 8px;
     align-items: center;
+    padding: 6px;
+    border-radius: 4px;
+    border-left: 4px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .mapping-row select {
@@ -77,7 +93,11 @@ select:hover {
 .mapping-row label {
     margin: 0;
     min-width: 80px;
-    font-size: 13px;
+    font-size: clamp(12px, 2.8vw, 13px);
+}
+
+.mapping-row.is-mapped label {
+    font-weight: 600;
 }
 
 .placeholder {
@@ -86,19 +106,72 @@ select:hover {
     font-style: italic;
 }
 
+.hint {
+    font-size: clamp(11px, 2.6vw, 12px);
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.checkbox-option input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+#csv-sample-container {
+    margin-top: 8px;
+    max-height: min(220px, 42vh);
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.sample-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(11px, 2.6vw, 12px);
+}
+
+.sample-table th,
+.sample-table td {
+    border: 1px solid #e5e7eb;
+    padding: 6px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.sample-table th {
+    background-color: #f9fafb;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
 .buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     justify-content: space-between;
 }
 
 .btn {
-    flex: 1;
+    flex: 1 1 140px;
+    min-height: 40px;
     padding: 8px 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: clamp(12px, 2.8vw, 13px);
     font-weight: 500;
     transition: all 0.2s ease;
 }
@@ -142,8 +215,9 @@ select:hover {
     margin-top: 12px;
     padding: 8px 12px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: clamp(12px, 2.8vw, 13px);
     display: none;
+    word-break: break-word;
 }
 
 .status-message.show {
@@ -166,4 +240,29 @@ select:hover {
     background-color: #d6eaf8;
     color: #3498db;
     border-left: 4px solid #3498db;
+}
+
+.status-message.warning {
+    background-color: #fef3c7;
+    color: #b45309;
+    border-left: 4px solid #f59e0b;
+}
+
+@media (max-width: 420px) {
+    .container {
+        padding: 10px;
+    }
+
+    .mapping-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mapping-row label {
+        min-width: auto;
+    }
+
+    .btn {
+        flex-basis: 100%;
+    }
 }
