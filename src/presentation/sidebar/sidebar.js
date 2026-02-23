@@ -14,8 +14,13 @@ import {
 } from '../../domain/csv-parser.js';
 
 import {
+    suggestOpenAIMapping
+} from '../../domain/ai-mapping.js';
+
+import {
     applyTranslations,
-    createI18n
+    createI18n,
+    getPreferredLanguage
 } from '../i18n.js';
 
 // Initialize container and services
@@ -24,7 +29,7 @@ container.initializeDefaultServices();
 
 const logger = container.get('logger');
 const storage = container.get('storage');
-const i18n = createI18n('en');
+const i18n = createI18n(getPreferredLanguage());
 const t = i18n.t;
 
 logger.info('Sidebar initializing...');
@@ -36,14 +41,101 @@ const csvSampleContainer = document.getElementById('csv-sample-container');
 const mappingContainer = document.getElementById('mapping-container');
 const tableSelect = document.getElementById('table-select');
 const dateFormatSelect = document.getElementById('date-format-select');
+const aiApiKeyInput = document.getElementById('ai-api-key');
+const aiKeyState = document.getElementById('ai-key-state');
+const saveAiKeyBtn = document.getElementById('save-ai-key');
+const clearAiKeyBtn = document.getElementById('clear-ai-key');
+const aiAutoMapBtn = document.getElementById('ai-auto-map');
 const saveMappingBtn = document.getElementById('save-mapping');
 const fillTableBtn = document.getElementById('fill-table');
 const clearMappingBtn = document.getElementById('clear-mapping');
 const statusMessage = document.getElementById('status-message');
 
+let hasStoredOpenAIKey = false;
+
 function setButtonA11yState(button, disabled) {
+    if (!button) {
+        return;
+    }
     button.disabled = disabled;
     button.setAttribute('aria-disabled', String(disabled));
+}
+
+function normalizeAppSettings(settings) {
+    if (!settings || typeof settings !== 'object') {
+        return {};
+    }
+    return settings;
+}
+
+async function getAppSettings() {
+    const settings = await storage.getSettings();
+    return normalizeAppSettings(settings);
+}
+
+async function saveAppSettings(nextSettings) {
+    const settings = normalizeAppSettings(nextSettings);
+    await storage.saveSettings(settings);
+}
+
+function updateAIKeyStateLabel() {
+    if (!aiKeyState) {
+        return;
+    }
+    aiKeyState.textContent = hasStoredOpenAIKey ? t('aiApiKeySaved') : t('aiApiKeyNotSaved');
+}
+
+async function resolveOpenAIKey() {
+    const typedKey = String(aiApiKeyInput?.value || '').trim();
+    if (typedKey) {
+        return typedKey;
+    }
+
+    const settings = await getAppSettings();
+    return String(settings.openaiApiKey || '').trim();
+}
+
+function getAIMappingErrorMessage(error) {
+    const errorCode = typeof error?.code === 'string' ? error.code : '';
+
+    if (errorCode === 'INVALID_API_KEY' || errorCode === 'UNAUTHORIZED') {
+        return t('aiErrorInvalidApiKey');
+    }
+    if (errorCode === 'FORBIDDEN') {
+        return t('aiErrorForbidden');
+    }
+    if (errorCode === 'QUOTA_EXCEEDED') {
+        return t('aiErrorQuotaExceeded');
+    }
+    if (errorCode === 'RATE_LIMITED') {
+        return t('aiErrorRateLimited');
+    }
+    if (errorCode === 'TIMEOUT') {
+        return t('aiErrorTimeout');
+    }
+    if (errorCode === 'NETWORK_ERROR') {
+        return t('aiErrorNetwork');
+    }
+    if (errorCode === 'MODEL_NOT_FOUND') {
+        return t('aiErrorModelNotFound');
+    }
+    if (errorCode === 'INPUT_TOO_LARGE') {
+        return t('aiErrorInputTooLarge');
+    }
+    if (errorCode === 'INVALID_REQUEST') {
+        return t('aiErrorInvalidRequest');
+    }
+    if (errorCode === 'INVALID_PROVIDER_RESPONSE') {
+        return t('aiErrorInvalidResponse');
+    }
+    if (errorCode === 'SERVER_ERROR') {
+        return t('aiErrorServer');
+    }
+    if (errorCode === 'REQUEST_FAILED') {
+        return t('aiErrorRequestFailed');
+    }
+
+    return t('aiErrorUnknown');
 }
 
 function getHighlightHue(columnIndex) {
@@ -368,28 +460,43 @@ function populateTableSelect() {
     highlightTargetTableInPage(true);
 }
 
+function getSelectedTable() {
+    if (!window.tableFields || window.tableFields.length === 0) {
+        return null;
+    }
+
+    const selectedTableIndex = Number.parseInt(tableSelect.value, 10);
+    if (Number.isInteger(selectedTableIndex) && window.tableFields[selectedTableIndex]) {
+        return window.tableFields[selectedTableIndex];
+    }
+
+    return window.tableFields[0] || null;
+}
+
 /**
  * Populate mapping select dropdowns with available fields
  */
 function populateMappingSelects() {
     const selects = document.querySelectorAll('[data-csv-column]');
+    const selectedTable = getSelectedTable();
 
     selects.forEach(select => {
         const currentValue = select.value;
         select.replaceChildren(createDefaultFieldOption());
 
-        if (window.tableFields && window.tableFields.length > 0) {
-            const selectedTableIndex = parseInt(tableSelect.value) || 0;
-            const table = window.tableFields[selectedTableIndex];
+        if (selectedTable && Array.isArray(selectedTable.fields)) {
+            selectedTable.fields.forEach(field => {
+                const selector = field.selector || field.name;
+                const displayName = field.name || selector;
+                if (!selector || !displayName) {
+                    return;
+                }
 
-            if (table && table.fields) {
-                table.fields.forEach(field => {
-                    const opt = document.createElement('option');
-                    opt.value = field.name;
-                    opt.textContent = field.name;
-                    select.appendChild(opt);
-                });
-            }
+                const opt = document.createElement('option');
+                opt.value = selector;
+                opt.textContent = displayName;
+                select.appendChild(opt);
+            });
         }
 
         select.value = currentValue;
@@ -398,9 +505,116 @@ function populateMappingSelects() {
     applyMappingHighlights();
 }
 
+function applyMappingToUI(mapping) {
+    const selects = document.querySelectorAll('[data-csv-column]');
+
+    selects.forEach(select => {
+        const csvCol = select.dataset.csvColumn;
+        select.value = mapping[csvCol] || '';
+    });
+
+    applyMappingHighlights();
+}
+
+async function runAIAutoMapping() {
+    if (!window.csvData || !Array.isArray(window.csvData.headers) || window.csvData.headers.length === 0) {
+        showStatus(t('loadCsvFirst'), 'warning');
+        return;
+    }
+
+    const selectedTable = getSelectedTable();
+    if (!selectedTable || !Array.isArray(selectedTable.fields) || selectedTable.fields.length === 0) {
+        showStatus(t('aiMapNeedTableFields'), 'warning');
+        return;
+    }
+
+    const apiKey = await resolveOpenAIKey();
+    if (!apiKey) {
+        showStatus(t('aiKeyRequired'), 'warning');
+        return;
+    }
+
+    showStatus(t('aiMapInProgress'), 'info', 0);
+
+    const aiResult = await suggestOpenAIMapping({
+        apiKey,
+        csvHeaders: window.csvData.headers,
+        targetFields: selectedTable.fields,
+        threshold: 62
+    });
+
+    const mappedColumns = Object.keys(aiResult.mapping).length;
+    if (mappedColumns === 0) {
+        showStatus(t('aiMapNoMatches'), 'warning');
+        return;
+    }
+
+    applyMappingToUI(aiResult.mapping);
+    showStatus(
+        t('aiMapApplied', {
+            mapped: mappedColumns,
+            total: window.csvData.headers.length
+        }),
+        'success'
+    );
+
+    logger.info('AI auto mapping applied', {
+        mappedColumns,
+        provider: aiResult.provider,
+        threshold: aiResult.threshold
+    });
+}
+
 /**
  * Save mapping configuration
  */
+saveAiKeyBtn.addEventListener('click', async () => {
+    try {
+        const typedKey = String(aiApiKeyInput.value || '').trim();
+        if (!typedKey) {
+            showStatus(t('aiKeyRequired'), 'warning');
+            return;
+        }
+
+        const settings = await getAppSettings();
+        settings.openaiApiKey = typedKey;
+        await saveAppSettings(settings);
+
+        hasStoredOpenAIKey = true;
+        updateAIKeyStateLabel();
+        aiApiKeyInput.value = '';
+        showStatus(t('aiKeySaved'), 'success');
+    } catch (error) {
+        logger.error('Save API key error', error);
+        showStatus(t('aiMapError', { message: error.message }), 'error');
+    }
+});
+
+clearAiKeyBtn.addEventListener('click', async () => {
+    try {
+        const settings = await getAppSettings();
+        delete settings.openaiApiKey;
+        await saveAppSettings(settings);
+
+        hasStoredOpenAIKey = false;
+        updateAIKeyStateLabel();
+        aiApiKeyInput.value = '';
+        showStatus(t('aiKeyCleared'), 'info');
+    } catch (error) {
+        logger.error('Clear API key error', error);
+        showStatus(t('aiMapError', { message: error.message }), 'error');
+    }
+});
+
+aiAutoMapBtn.addEventListener('click', async () => {
+    try {
+        await runAIAutoMapping();
+    } catch (error) {
+        logger.error('AI auto-map error', error);
+        showStatus(t('aiMapError', { message: getAIMappingErrorMessage(error) }), 'error');
+    }
+});
+
 saveMappingBtn.addEventListener('click', async () => {
     try {
         if (!window.csvData || !window.csvData.headers.length) {
@@ -545,6 +759,10 @@ async function initializeSidebar() {
             setButtonA11yState(saveMappingBtn, false);
         }
 
+        const settings = await getAppSettings();
+        hasStoredOpenAIKey = Boolean(String(settings.openaiApiKey || '').trim());
+        updateAIKeyStateLabel();
+
         // Try to detect tables on current page
         loadTableFields();
 
@@ -559,9 +777,11 @@ document.addEventListener('DOMContentLoaded', initializeSidebar);
 setButtonA11yState(saveMappingBtn, saveMappingBtn.disabled);
 setButtonA11yState(fillTableBtn, fillTableBtn.disabled);
 setButtonA11yState(clearMappingBtn, clearMappingBtn.disabled);
+setButtonA11yState(saveAiKeyBtn, saveAiKeyBtn.disabled);
+setButtonA11yState(clearAiKeyBtn, clearAiKeyBtn.disabled);
+setButtonA11yState(aiAutoMapBtn, aiAutoMapBtn.disabled);
 
 tableSelect.addEventListener('change', () => {
     populateMappingSelects();
     highlightTargetTableInPage(true, true);
 });
-

@@ -106,7 +106,30 @@ describe('Presentation - Messaging Security', () => {
 
       expect(response.success).toBe(true);
       expect(response.tables[0].fields.map(field => field.name)).toEqual(['nrua', 'finalidad']);
+      expect(response.tables[0].fields.map(field => field.selector)).toEqual(['name:nrua', 'name:finalidad']);
       expect(response.tables[0].fieldsCount).toBe(2);
+    });
+
+    it('should expose semantic labels and selector tokens for id-only fields', async () => {
+      document.body.innerHTML = `
+        <form>
+          <input id="guest-count-1" aria-label="Número de huéspedes" />
+          <input id="check-in-1" aria-label="Fecha de entrada" />
+        </form>
+      `;
+
+      await import('../../../src/presentation/content-script.bootstrap.js');
+
+      const [listener] = global.browser.runtime.getListeners('onMessage');
+      const response = await callOnMessageListener(
+        listener,
+        { action: 'getTableInfo' },
+        { id: global.browser.runtime.id, url: `moz-extension://${global.browser.runtime.id}/sidebar.html` }
+      );
+
+      expect(response.success).toBe(true);
+      expect(response.tables[0].fields.map(field => field.name)).toEqual(['Número de huéspedes', 'Fecha de entrada']);
+      expect(response.tables[0].fields.map(field => field.selector)).toEqual(['id:guest-count-1', 'id:check-in-1']);
     });
 
     it('should accept allowed extension protocol when sender id matches', async () => {
@@ -321,6 +344,53 @@ describe('Presentation - Messaging Security', () => {
       expect(document.querySelector('[name="finalidad_2"]').value).toBe('Trabajo');
       expect(document.querySelector('[name="nrua_3"]').value).toBe('A-003');
       expect(document.querySelector('[name="finalidad_3"]').value).toBe('Otro');
+    });
+
+    it('should support id-based selector mapping and resolve select options by visible text', async () => {
+      document.body.innerHTML = `
+        <table>
+          <tbody>
+            <tr>
+              <td>
+                <select id="purpose-1">
+                  <option value=""></option>
+                  <option value="1">Vacacional/Turístico</option>
+                  <option value="2">Laboral</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <select id="purpose-2">
+                  <option value=""></option>
+                  <option value="1">Vacacional/Turístico</option>
+                  <option value="2">Laboral</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+      await import('../../../src/presentation/content-script.bootstrap.js');
+
+      const [listener] = global.browser.runtime.getListeners('onMessage');
+      const response = await callOnMessageListener(
+        listener,
+        {
+          action: 'fillTable',
+          data: {
+            tableIndex: 0,
+            mapping: { '0': 'id:purpose-1' },
+            csvRows: [['Vacacional/Turístico'], ['Laboral']]
+          }
+        },
+        { id: global.browser.runtime.id, url: `moz-extension://${global.browser.runtime.id}/sidebar.html` }
+      );
+
+      expect(response.success).toBe(true);
+      expect(document.querySelector('#purpose-1').value).toBe('1');
+      expect(document.querySelector('#purpose-2').value).toBe('2');
     });
 
     it('should return success when CSV has fewer rows than target table', async () => {

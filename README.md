@@ -13,7 +13,8 @@ Current implementation status:
 ## 📋 Features
 
 - **CSV Import**: Load CSV files directly from the browser
-- **Smart Column Mapping**: Map CSV columns to detected target fields from the first editable row
+- **AI Column Mapping (BYOK)**: Optional OpenAI-based mapping using your own API key
+- **Built-in Data Consent**: Firefox `data_collection_permissions` declaration for transmitted website content
 - **Row-by-Row Fill**: Populate target table rows top-to-bottom using all CSV rows
 - **Persistent Configs**: Save and reuse mapping configurations
 - **Date Transform Options**: Auto or explicit output format (`dd.mm.yyyy`, `dd/mm/yyyy`, `yyyy-mm-dd`)
@@ -54,7 +55,8 @@ npm run prepare:browser:firefox
 1. **Open a webpage** with tables or forms you want to fill
 2. **Click the extension icon** in the browser toolbar
 3. **Upload a CSV file** from your computer
-4. **Configure mapping**: Select the destination field for each CSV column
+4. **Configure mapping**: Select destination fields manually or run **AI Auto-map**
+   - Configure OpenAI API key in the sidebar
 5. **Select date transform mode** (optional)
 6. **Click "Fill Table"**: The extension fills rows top-to-bottom
 7. **Save mapping** for future reuse
@@ -122,6 +124,7 @@ src/
 ├── domain/                  # Business logic & entities
 │   ├── csv-parser.js       # CSV parsing and validation
 │   ├── mapping.js          # Column mapping configuration
+│   ├── ai-mapping.js       # OpenAI BYOK mapping adapter
 │   └── table-handler.js    # HTML form field extraction & filling
 │
 └── presentation/            # User interface & messaging layer
@@ -295,6 +298,7 @@ The extension uses domain functions instead of service classes:
 | `parseCSV(content)` | csv-parser.js | Parse raw CSV text into headers & rows |
 | `validateCSVData(data)` | csv-parser.js | Validate CSV against size/row/column limits |
 | `createMapping(headers, config)` | mapping.js | Create validated mapping config |
+| `suggestOpenAIMapping(params)` | ai-mapping.js | Suggest mapping with OpenAI using BYOK API key |
 | `getTableFields(element)` | table-handler.js | Extract form fields from HTML |
 | `fillFields(fields, rowData)` | table-handler.js | Fill form fields with data |
 
@@ -313,9 +317,10 @@ Messages are validated and sanitized; unauthorized senders/actions are rejected.
 
 ## 🔐 Security & Privacy
 
-- ✅ No data sent to external servers
-- ✅ All processing happens locally in your browser
-- ✅ CSV data never persisted (mappings only)
+- ✅ Core fill workflow runs locally in your browser (CSV parsing, mapping UI, DOM filling)
+- ⚠️ Optional AI Auto-map sends limited metadata to OpenAI only when explicitly triggered
+- ✅ AI payload excludes CSV row values (headers + target field metadata only)
+- ✅ CSV data never persisted (mappings/settings only)
 - ✅ Respects browser storage limits
 - ✅ No tracking or analytics
 - ✅ Open source for transparency

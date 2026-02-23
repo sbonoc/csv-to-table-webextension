@@ -10,6 +10,8 @@
   ]);
   const TARGET_TABLE_CLASS = 'csv-filler-target-table-highlight';
   const TARGET_FIELD_CLASS = 'csv-filler-target-field-highlight';
+  const FIELD_KEY_ATTR = 'data-csv-filler-field-key';
+  let generatedFieldKey = 0;
 
   function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -225,9 +227,11 @@
     const inputs = scope.querySelectorAll('input, textarea, select');
 
     inputs.forEach((input) => {
-      const name = input.name || input.id || input.placeholder || 'unnamed';
+      const selector = buildFieldSelector(input);
+      const name = buildFieldDisplayName(input);
       fields.push({
         name,
+        selector,
         type: input.type || 'text'
       });
     });
@@ -235,13 +239,145 @@
     return fields;
   }
 
-  function findFieldElement(container, name = null) {
-    if (!name) {
+  function buildFieldSelector(element) {
+    if (!element) {
+      return '';
+    }
+
+    if (element.name) {
+      return `name:${element.name}`;
+    }
+
+    if (element.id) {
+      return `id:${element.id}`;
+    }
+
+    let key = element.getAttribute(FIELD_KEY_ATTR);
+    if (!key) {
+      generatedFieldKey += 1;
+      key = `auto-${generatedFieldKey}`;
+      element.setAttribute(FIELD_KEY_ATTR, key);
+    }
+
+    return `data:${key}`;
+  }
+
+  function buildFieldDisplayName(element) {
+    if (!element) {
+      return 'unnamed';
+    }
+
+    const ariaLabel = element.getAttribute('aria-label');
+    if (ariaLabel && ariaLabel.trim()) {
+      return ariaLabel.trim();
+    }
+
+    const labels = typeof element.labels !== 'undefined' ? Array.from(element.labels) : [];
+    const labelText = labels.map((label) => label.textContent || '').join(' ').trim();
+    if (labelText) {
+      return labelText;
+    }
+
+    if (element.id) {
+      const escapedId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(element.id) : element.id;
+      const linkedLabel = document.querySelector(`label[for="${escapedId}"]`);
+      const linkedText = linkedLabel?.textContent?.trim();
+      if (linkedText) {
+        return linkedText;
+      }
+    }
+
+    const wrappedLabel = element.closest('label');
+    if (wrappedLabel?.textContent?.trim()) {
+      return wrappedLabel.textContent.trim();
+    }
+
+    const placeholder = element.getAttribute('placeholder');
+    if (placeholder && placeholder.trim()) {
+      return placeholder.trim();
+    }
+
+    return element.name || element.id || 'unnamed';
+  }
+
+  function findFieldElement(container, fieldIdentifier = null) {
+    if (!fieldIdentifier) {
       return null;
     }
 
-    const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(name) : name;
+    const token = String(fieldIdentifier).trim();
+    if (!token) {
+      return null;
+    }
+
+    if (token.startsWith('name:')) {
+      const name = token.slice(5);
+      const escapedName = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(name) : name;
+      return container.querySelector(`[name="${escapedName}"]`);
+    }
+
+    if (token.startsWith('id:')) {
+      const id = token.slice(3);
+      const escapedId = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(id) : id;
+      return container.querySelector(`#${escapedId}`);
+    }
+
+    if (token.startsWith('data:')) {
+      const dataKey = token.slice(5);
+      const escapedKey = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(dataKey) : dataKey;
+      return container.querySelector(`[${FIELD_KEY_ATTR}="${escapedKey}"]`);
+    }
+
+    const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(token) : token;
     return container.querySelector(`[name="${escaped}"], #${escaped}`);
+  }
+
+  function normalizeComparableText(value) {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function setSelectValue(selectElement, rawValue) {
+    const value = String(rawValue ?? '').trim();
+    const options = Array.from(selectElement.options || []);
+
+    const byValue = options.find((option) => option.value === value);
+    if (byValue) {
+      selectElement.value = byValue.value;
+      return;
+    }
+
+    const normalizedInput = normalizeComparableText(value);
+    if (!normalizedInput) {
+      selectElement.value = value;
+      return;
+    }
+
+    const byLabel = options.find((option) => {
+      const normalizedOption = normalizeComparableText(option.textContent || option.label || '');
+      return normalizedOption === normalizedInput;
+    });
+
+    if (byLabel) {
+      selectElement.value = byLabel.value;
+      return;
+    }
+
+    const byContains = options.find((option) => {
+      const normalizedOption = normalizeComparableText(option.textContent || option.label || '');
+      return normalizedOption.includes(normalizedInput) || normalizedInput.includes(normalizedOption);
+    });
+
+    if (byContains) {
+      selectElement.value = byContains.value;
+      return;
+    }
+
+    selectElement.value = value;
   }
 
   function setFieldValue(element, value, dateTransformMode = 'auto') {
@@ -251,6 +387,8 @@
     if (element.type === 'checkbox' || element.type === 'radio') {
       const asLower = normalized.toLowerCase();
       element.checked = asLower === 'true' || asLower === '1' || asLower === 'si' || asLower === 'sí';
+    } else if (element.tagName === 'SELECT') {
+      setSelectValue(element, normalized);
     } else {
       element.value = normalized;
     }

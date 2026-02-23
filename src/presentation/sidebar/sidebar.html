@@ -57,6 +57,19 @@
             <p class="hint" data-i18n="dateHint">Applied during fill when date-like values are detected.</p>
         </section>
 
+        <section class="section" aria-labelledby="ai-mapping-title">
+            <h2 id="ai-mapping-title" data-i18n="aiMappingTitle">AI Mapping (BYOK)</h2>
+            <p class="hint" data-i18n="aiMappingHint">Experimental. Sends CSV headers plus target field metadata (labels, selectors, types) to OpenAI when AI Auto-map is used.</p>
+            <label for="ai-api-key" data-i18n="openaiApiKeyLabel">OpenAI API Key:</label>
+            <input type="password" id="ai-api-key" data-i18n-placeholder="openaiApiKeyPlaceholder" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+            <p class="hint" id="ai-key-state" data-i18n="aiApiKeyNotSaved">No API key saved</p>
+            <div class="buttons">
+                <button id="save-ai-key" class="btn btn-neutral" data-i18n="saveApiKey">Save API Key</button>
+                <button id="clear-ai-key" class="btn btn-danger" data-i18n="clearApiKey">Clear API Key</button>
+                <button id="ai-auto-map" class="btn btn-neutral" data-i18n="aiAutoMap">AI Auto-map</button>
+            </div>
+        </section>
+
         <section class="section buttons" aria-label="Actions">
             <button id="save-mapping" class="btn btn-primary" disabled data-i18n="saveMapping">Save Mapping</button>
             <button id="fill-table" class="btn btn-secondary" disabled data-i18n="fillTable">Fill Table</button>

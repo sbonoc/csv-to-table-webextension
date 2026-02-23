@@ -49,6 +49,7 @@ label {
 }
 
 input[type="file"],
+input[type="password"],
 select {
     width: 100%;
     min-height: 38px;
@@ -60,11 +61,13 @@ select {
 }
 
 input[type="file"]:hover,
+input[type="password"]:hover,
 select:hover {
     border-color: #3498db;
 }
 
 input[type="file"]:focus-visible,
+input[type="password"]:focus-visible,
 select:focus-visible,
 .btn:focus-visible {
     outline: 3px solid #1d4ed8;
@@ -218,6 +221,16 @@ select:focus-visible,
 .btn-danger {
     background-color: #b91c1c;
     color: white;
+}
+
+.btn-neutral {
+    background-color: #475569;
+    color: white;
+}
+
+.btn-neutral:hover:not(:disabled) {
+    background-color: #334155;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-danger:hover:not(:disabled) {

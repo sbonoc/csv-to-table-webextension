@@ -40,7 +40,12 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "csv-to-table-filler@sbonoc.dev"
+      "id": "csv-to-table-filler@sbonoc.dev",
+      "data_collection_permissions": {
+        "required": [
+          "websiteContent"
+        ]
+      }
     }
   }
 }
