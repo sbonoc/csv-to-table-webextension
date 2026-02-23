@@ -1,6 +1,6 @@
 {
   "name": "csv-to-table-filler",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Firefox extension that automates filling HTML tables using CSV files with custom column mapping",
   "license": "MIT",
   "author": "sbonoc",
