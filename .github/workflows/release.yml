@@ -62,20 +62,35 @@ jobs:
             echo "No test summary report was generated." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Build extension package
-        run: npm run build
+      - name: Ensure AMO signing secrets are configured
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          if [ -z "$AMO_JWT_ISSUER" ] || [ -z "$AMO_JWT_SECRET" ]; then
+            echo "::error::Missing AMO_JWT_ISSUER and/or AMO_JWT_SECRET GitHub secrets."
+            echo "::error::Create AMO API credentials and add them before creating a release tag."
+            exit 1
+          fi
 
-      - name: Prepare XPI artifact
+      - name: Sign Firefox extension (unlisted)
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          npm run sign:firefox
+
+      - name: Prepare signed XPI artifact
         id: package
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          BUILD_FILE=$(find web-ext-artifacts -name "*.zip" -type f | head -1)
-          if [ ! -f "$BUILD_FILE" ]; then
-            echo "::error::No build artifact found in web-ext-artifacts."
+          SIGNED_FILE=$(find web-ext-artifacts -name "*.xpi" -type f | head -1)
+          if [ ! -f "$SIGNED_FILE" ]; then
+            echo "::error::No signed XPI found in web-ext-artifacts."
             exit 1
           fi
           XPI_FILE="csv-to-table-filler-${VERSION}.xpi"
-          cp "$BUILD_FILE" "$XPI_FILE"
+          cp "$SIGNED_FILE" "$XPI_FILE"
           echo "xpi_file=$XPI_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub release
@@ -84,7 +99,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           files: ${{ steps.package.outputs.xpi_file }}
           body: |
-            Firefox add-on package generated from tag `${{ github.ref_name }}`.
+            Firefox add-on package signed by Mozilla (unlisted channel) from tag `${{ github.ref_name }}`.
 
             Installation:
             1. Download the `.xpi` file from this release.

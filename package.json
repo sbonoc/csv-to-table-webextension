@@ -13,6 +13,7 @@
     "start:firefox": "npm run prepare:browser:firefox && web-ext run",
     "build": "npm run prepare:browser:firefox && web-ext build --overwrite-dest",
     "build:firefox": "npm run prepare:browser:firefox && web-ext build --overwrite-dest",
+    "sign:firefox": "npm run prepare:browser:firefox && web-ext sign --channel=unlisted --api-key=\"$WEB_EXT_API_KEY\" --api-secret=\"$WEB_EXT_API_SECRET\"",
     "lint": "npm run prepare:browser:firefox && web-ext lint --ignore-files tests/** --ignore-files scripts/** --ignore-files test-results/** --ignore-files playwright-results/**",
     "test": "vitest",
     "test:unit": "vitest run --reporter=json --outputFile=test-results/unit.json tests/unit",

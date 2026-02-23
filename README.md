@@ -43,7 +43,7 @@ npm run prepare:browser:firefox
 ```
 
 ### For Users
-1. Download the `.xpi` file from releases
+1. Download a **signed** `.xpi` file from releases
 2. Open Firefox and go to `about:addons`
 3. Click "Install Add-on from File" and select the `.xpi`
 
@@ -225,6 +225,7 @@ Current targets:
 ```bash
 npm start                      # Run extension (Firefox target)
 npm run build                  # Build extension (Firefox target)
+npm run sign:firefox           # Sign with AMO API credentials (unlisted channel)
 npm run lint                   # Lint extension (Firefox target)
 npm run prepare:browser        # Prepare default target (Firefox)
 npm run prepare:browser:chrome # Validate pending Chrome target (expected to fail)
@@ -416,7 +417,18 @@ After each Node 20.x workflow job run, GitHub Actions publishes a detailed test 
 The `.xpi` is published to GitHub Releases only when all these conditions are true:
 - Push event is a tag matching `v*` (for example `v1.2.0`)
 - The tagged commit belongs to `master`
-- Release workflow passes lint + tests + build
+- Release workflow passes lint + tests and signs the add-on in AMO (`unlisted` channel)
+- Repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` are configured
+
+### Firefox Signing Setup (Required)
+
+Firefox only installs extensions signed by Mozilla. Configure AMO signing before releasing:
+
+1. In AMO Developer Hub, create API credentials (JWT issuer/key and JWT secret).
+2. In GitHub repository settings, add secrets:
+   - `AMO_JWT_ISSUER`
+   - `AMO_JWT_SECRET`
+3. Create/push a tag (`v*`) and let the release workflow sign and upload the resulting `.xpi`.
 
 ### Creating Releases
 
@@ -437,9 +449,9 @@ git push origin v1.0.0
 This automatically:
 1. Validates that the tag commit is contained in `master`
 2. Runs full lint and test suite
-3. Builds the Firefox extension package
+3. Submits the extension for AMO signing (`unlisted`) and waits for the signed package
 4. Creates a GitHub Release page
-5. Uploads `.xpi` file for download
+5. Uploads signed `.xpi` file for download
 
 ### Local Testing
 
