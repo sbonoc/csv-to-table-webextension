@@ -158,7 +158,8 @@ tests/
 
 .github/
 └── workflows/
-    └── build-and-release.yml  # GitHub Actions CI/CD
+    ├── ci.yml                 # CI for pushes/PRs (master, develop)
+    └── release.yml            # Release on tag v* only when tag commit is on master
 
 vitest.config.js           # Unit & integration test configuration
 playwright.config.js       # E2E test configuration
@@ -388,7 +389,7 @@ MIT License - see LICENSE file for details
 The project includes **automated GitHub Actions** that:
 
 ### Automatic Testing & Building
-- Runs on every push to `main` and `develop` branches
+- Runs on every push to `master` and `develop` branches
 - Tests on multiple Node.js versions (18.x, 20.x)
 - **Unit tests** (84%): 140 tests for individual functions
 - **Integration tests** (7%): 12 tests for module interactions  
@@ -407,19 +408,23 @@ After each workflow run, the job summary displays a detailed table:
 - Execution time per test type
 - Success rate and total duration
 
-### Artifacts & Downloads
+### Release Policy
 
-After each workflow run:
-- **Built `.xpi` file**: Ready to install in Firefox
-- **Test reports**: JSON and Markdown formats
-- **Artifacts retained** for 90 days on GitHub Actions
+The `.xpi` is published to GitHub Releases only when all these conditions are true:
+- Push event is a tag matching `v*` (for example `v1.2.0`)
+- The tagged commit belongs to `master`
+- Release workflow passes lint + tests + build
 
 ### Creating Releases
 
 To release a new version:
 
 ```bash
-# Tag the release (semantic versioning: v1.0.0)
+# Ensure the target commit is on master first
+git checkout master
+git pull
+
+# Create the release tag (semantic versioning: v1.0.0)
 git tag v1.0.0
 
 # Push the tag
@@ -427,11 +432,11 @@ git push origin v1.0.0
 ```
 
 This automatically:
-1. Runs full test suite
-2. Builds the Firefox extension
-3. Creates a GitHub Release page
-4. Uploads `.xpi` file for download
-5. Generates installation instructions
+1. Validates that the tag commit is contained in `master`
+2. Runs full lint and test suite
+3. Builds the Firefox extension package
+4. Creates a GitHub Release page
+5. Uploads `.xpi` file for download
 
 ### Local Testing
 

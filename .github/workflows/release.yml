@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag commit belongs to master
+        run: |
+          git fetch origin master --depth=1
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" "origin/master"; then
+            echo "::error::Tag ${GITHUB_REF_NAME} is not on master. Release aborted."
+            exit 1
+          fi
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Setup Playwright
+        run: npx playwright install --with-deps firefox
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Build extension package
+        run: npm run build
+
+      - name: Prepare XPI artifact
+        id: package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUILD_FILE=$(find web-ext-artifacts -name "*.zip" -type f | head -1)
+          if [ ! -f "$BUILD_FILE" ]; then
+            echo "::error::No build artifact found in web-ext-artifacts."
+            exit 1
+          fi
+          XPI_FILE="csv-to-table-filler-${VERSION}.xpi"
+          cp "$BUILD_FILE" "$XPI_FILE"
+          echo "xpi_file=$XPI_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.ref_name }}
+          files: ${{ steps.package.outputs.xpi_file }}
+          body: |
+            Firefox add-on package generated from tag `${{ github.ref_name }}`.
+
+            Installation:
+            1. Download the `.xpi` file from this release.
+            2. Open Firefox and go to `about:addons`.
+            3. Choose "Install Add-on from File" and select the downloaded `.xpi`.
