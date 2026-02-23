@@ -161,7 +161,7 @@ tests/
     ├── ci.yml                 # CI for pushes/PRs (master, develop)
     └── release.yml            # Release on tag v* only when tag commit is on master
 
-vitest.config.js           # Unit & integration test configuration
+vitest.config.mjs          # Unit & integration test configuration
 playwright.config.js       # E2E test configuration
 manifest.json              # Firefox extension manifest
 manifests/
@@ -393,7 +393,7 @@ The project includes **automated GitHub Actions** that:
 
 ### Automatic Testing & Building
 - Runs on every push to `master` and `develop` branches
-- Tests on multiple Node.js versions (18.x, 20.x)
+- Tests on Node.js 20.x
 - **Unit tests** (84%): 142 tests for individual functions
 - **Integration tests** (7%): 12 tests for module interactions  
 - **E2E tests** (9%): 16 tests for complete user workflows in real Firefox browser
