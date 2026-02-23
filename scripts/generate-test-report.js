@@ -96,29 +96,66 @@ function parsePlaywrightReport(filePath) {
 }
 
 /**
- * Generate test pyramid ASCII art
+ * Create ASCII table
+ */
+function createTable(headers, rows) {
+  // Calculate column widths
+  const colWidths = headers.map((header, idx) => {
+    const headerLen = String(header).length;
+    const maxRowLen = Math.max(...rows.map(row => String(row[idx] || '').length));
+    return Math.max(headerLen, maxRowLen) + 2;
+  });
+
+  // Create header
+  let table = '┌' + colWidths.map(w => '─'.repeat(w)).join('┬') + '┐\n';
+  table += '│' + headers.map((h, i) => padCenter(String(h), colWidths[i])).join('│') + '│\n';
+  table += '├' + colWidths.map(w => '─'.repeat(w)).join('┼') + '┤\n';
+
+  // Create rows
+  rows.forEach((row, idx) => {
+    table += '│' + row.map((cell, i) => padCenter(String(cell || ''), colWidths[i])).join('│') + '│\n';
+  });
+
+  // Close table
+  table += '└' + colWidths.map(w => '─'.repeat(w)).join('┴') + '┘\n';
+
+  return table;
+}
+
+/**
+ * Pad string to center
+ */
+function padCenter(str, width) {
+  const totalPad = width - str.length;
+  const leftPad = Math.floor(totalPad / 2);
+  const rightPad = totalPad - leftPad;
+  return ' '.repeat(leftPad) + str + ' '.repeat(rightPad);
+}
+
+/**
+ * Pad string to right
+ */
+function padRight(str, width) {
+  return str.padEnd(width, ' ');
+}
+
+/**
+ * Generate test pyramid table
  */
 function generateTestPyramid(unit, integration, e2e) {
-  const unitPercent = Math.round((unit.total / (unit.total + integration.total + e2e.total)) * 100);
-  const integrationPercent = Math.round((integration.total / (unit.total + integration.total + e2e.total)) * 100);
-  const e2ePercent = Math.round((e2e.total / (unit.total + integration.total + e2e.total)) * 100);
+  const total = unit.total + integration.total + e2e.total;
+  const unitPercent = total > 0 ? Math.round((unit.total / total) * 100) : 0;
+  const integrationPercent = total > 0 ? Math.round((integration.total / total) * 100) : 0;
+  const e2ePercent = total > 0 ? Math.round((e2e.total / total) * 100) : 0;
 
-  return `
-╔══════════════════════════════════════════╗
-║         TEST PYRAMID REPORT              ║
-╚══════════════════════════════════════════╝
+  const headers = ['Type', 'Level', '%', 'Total', '✅ Passed', '❌ Failed', '⏭️ Skipped', '⏱️ Duration (s)'];
+  const rows = [
+    ['🏗️ Unit', '█████████████████████', `${unitPercent}%`, unit.total, unit.passed, unit.failed, unit.skipped, (unit.duration / 1000).toFixed(2)],
+    ['📦 Integration', '███████████', `${integrationPercent}%`, integration.total, integration.passed, integration.failed, integration.skipped, (integration.duration / 1000).toFixed(2)],
+    ['🎯 E2E', '██', `${e2ePercent}%`, e2e.total, e2e.passed, e2e.failed, e2e.skipped, (e2e.duration / 1000).toFixed(2)]
+  ];
 
-              ▌ 🎯 E2E (${e2ePercent}%)
-              ▌ ${e2e.total} tests | ✅ ${e2e.passed} | ❌ ${e2e.failed} | ⏭️ ${e2e.skipped} | ⏱️ ${e2e.duration}ms
-             ▐─────────────────▌
-            ▌   📦 Integration (${integrationPercent}%)
-            ▌   ${integration.total} tests | ✅ ${integration.passed} | ❌ ${integration.failed} | ⏭️ ${integration.skipped} | ⏱️ ${integration.duration}ms
-           ▐─────────────────────────────▌
-          ▌     🏗️ Unit (${unitPercent}%)
-          ▌     ${unit.total} tests | ✅ ${unit.passed} | ❌ ${unit.failed} | ⏭️ ${unit.skipped} | ⏱️ ${unit.duration}ms
-         ▐───────────────────────────────────────▌
-
-`;
+  return createTable(headers, rows);
 }
 
 /**
@@ -131,31 +168,33 @@ function generateSummaryReport(unit, integration, e2e) {
   const totalSkipped = unit.skipped + integration.skipped + e2e.skipped;
   const totalDuration = unit.duration + integration.duration + e2e.duration;
   const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+  const status = totalFailed === 0 ? '✅ PASSED' : '❌ FAILED';
+
+  // Overall summary table
+  const summaryHeaders = ['Metric', 'Count', 'Percentage'];
+  const summaryRows = [
+    ['Total Tests', totalTests, '100%'],
+    ['✅ Passed', totalPassed, `${successRate}%`],
+    ['❌ Failed', totalFailed, totalTests > 0 ? `${Math.round((totalFailed / totalTests) * 100)}%` : '0%'],
+    ['⏭️ Skipped', totalSkipped, totalTests > 0 ? `${Math.round((totalSkipped / totalTests) * 100)}%` : '0%'],
+    ['⏱️ Total Duration', `${(totalDuration / 1000).toFixed(2)}s`, '-']
+  ];
+
+  const summaryTable = createTable(summaryHeaders, summaryRows);
+
+  // Test pyramid
+  const pyramidTable = generateTestPyramid(unit, integration, e2e);
 
   let summary = `
 ╔══════════════════════════════════════════════════════╗
-║            TEST EXECUTION SUMMARY                   ║
+║          📊 TEST EXECUTION SUMMARY                   ║
 ╚══════════════════════════════════════════════════════╝
 
-📊 Overall Results:
-  Total Tests: ${totalTests}
-  ✅ Passed: ${totalPassed} (${successRate}%)
-  ❌ Failed: ${totalFailed}
-  ⏭️  Skipped: ${totalSkipped}
-  ⏱️  Total Duration: ${(totalDuration / 1000).toFixed(2)}s
-
-📈 By Type:
-  🏗️  Unit Tests:
-      Total: ${unit.total} | ✅ ${unit.passed} | ❌ ${unit.failed} | ⏭️ ${unit.skipped} | ⏱️ ${(unit.duration / 1000).toFixed(2)}s
-      
-  📦 Integration Tests:
-      Total: ${integration.total} | ✅ ${integration.passed} | ❌ ${integration.failed} | ⏭️ ${integration.skipped} | ⏱️ ${(integration.duration / 1000).toFixed(2)}s
-      
-  🎯 E2E Tests:
-      Total: ${e2e.total} | ✅ ${e2e.passed} | ❌ ${e2e.failed} | ⏭️ ${e2e.skipped} | ⏱️ ${(e2e.duration / 1000).toFixed(2)}s
-
-${generateTestPyramid(unit, integration, e2e)}
-Status: ${totalFailed === 0 ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}
+OVERALL RESULTS:
+${summaryTable}
+TEST PYRAMID:
+${pyramidTable}
+Status: ${status}
 `;
 
   return {
@@ -212,47 +251,38 @@ function main() {
   const mdReport = `# 🧪 Test Execution Report
 
 ## 📊 Overall Results
-- **Total Tests**: ${stats.totalTests}
-- **✅ Passed**: ${stats.totalPassed} (${stats.successRate}%)
-- **❌ Failed**: ${stats.totalFailed}
-- **⏭️ Skipped**: ${stats.totalSkipped}
-- **⏱️ Total Duration**: ${stats.totalDuration}s
 
-## 📈 By Type
+| Metric | Count | Percentage |
+|--------|-------|-----------|
+| Total Tests | ${stats.totalTests} | 100% |
+| ✅ Passed | ${stats.totalPassed} | ${stats.successRate}% |
+| ❌ Failed | ${stats.totalFailed} | ${stats.totalTests > 0 ? Math.round((stats.totalFailed / stats.totalTests) * 100) : 0}% |
+| ⏭️ Skipped | ${stats.totalSkipped} | ${stats.totalTests > 0 ? Math.round((stats.totalSkipped / stats.totalTests) * 100) : 0}% |
+| ⏱️ Total Duration | ${stats.totalDuration}s | - |
 
-### 🏗️ Unit Tests
-- Total: ${stats.byType.unit.total}
-- ✅ Passed: ${stats.byType.unit.passed}
-- ❌ Failed: ${stats.byType.unit.failed}
-- ⏭️ Skipped: ${stats.byType.unit.skipped}
-- ⏱️ Duration: ${(stats.byType.unit.duration / 1000).toFixed(2)}s
+## 📈 Test Results by Type
 
-### 📦 Integration Tests
-- Total: ${stats.byType.integration.total}
-- ✅ Passed: ${stats.byType.integration.passed}
-- ❌ Failed: ${stats.byType.integration.failed}
-- ⏭️ Skipped: ${stats.byType.integration.skipped}
-- ⏱️ Duration: ${(stats.byType.integration.duration / 1000).toFixed(2)}s
+| Type | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Duration |
+|------|-------|----------|----------|-----------|-----------|
+| 🏗️ Unit | ${stats.byType.unit.total} | ${stats.byType.unit.passed} | ${stats.byType.unit.failed} | ${stats.byType.unit.skipped} | ${(stats.byType.unit.duration / 1000).toFixed(2)}s |
+| 📦 Integration | ${stats.byType.integration.total} | ${stats.byType.integration.passed} | ${stats.byType.integration.failed} | ${stats.byType.integration.skipped} | ${(stats.byType.integration.duration / 1000).toFixed(2)}s |
+| 🎯 E2E | ${stats.byType.e2e.total} | ${stats.byType.e2e.passed} | ${stats.byType.e2e.failed} | ${stats.byType.e2e.skipped} | ${(stats.byType.e2e.duration / 1000).toFixed(2)}s |
 
-### 🎯 E2E Tests
-- Total: ${stats.byType.e2e.total}
-- ✅ Passed: ${stats.byType.e2e.passed}
-- ❌ Failed: ${stats.byType.e2e.failed}
-- ⏭️ Skipped: ${stats.byType.e2e.skipped}
-- ⏱️ Duration: ${(stats.byType.e2e.duration / 1000).toFixed(2)}s
+## 📊 Test Pyramid Distribution
 
-## Test Pyramid
+| Test Type | Level | Percentage | Visual |
+|-----------|-------|-----------|--------|
+| Unit | 🏗️ | ${stats.totalTests > 0 ? Math.round((stats.byType.unit.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.unit.total / stats.totalTests) * 30))} |
+| Integration | 📦 | ${stats.totalTests > 0 ? Math.round((stats.byType.integration.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.integration.total / stats.totalTests) * 30))} |
+| E2E | 🎯 | ${stats.totalTests > 0 ? Math.round((stats.byType.e2e.total / stats.totalTests) * 100) : 0}% | ${'█'.repeat(Math.round((stats.byType.e2e.total / stats.totalTests) * 30))} |
 
-\`\`\`
-              ▌ 🎯 E2E (${Math.round((stats.byType.e2e.total / stats.totalTests) * 100)}%)
-             ▐─────────────────▌
-            ▌   📦 Integration (${Math.round((stats.byType.integration.total / stats.totalTests) * 100)}%)
-           ▐─────────────────────────────▌
-          ▌     🏗️ Unit (${Math.round((stats.byType.unit.total / stats.totalTests) * 100)}%)
-         ▐───────────────────────────────────────▌
-\`\`\`
+## Final Status
 
-**Status**: ${stats.totalFailed === 0 ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}
+**${stats.totalFailed === 0 ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}**
+
+- Success Rate: ${stats.successRate}%
+- Total Execution Time: ${stats.totalDuration}s
+- Tests Run: ${stats.totalTests}
 `;
   fs.writeFileSync(mdReportPath, mdReport);
   console.log(`📝 Markdown report saved to: ${mdReportPath}`);
