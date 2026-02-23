@@ -58,28 +58,28 @@ Bob,Johnson,bob@example.com,Marketing
 The project follows **Clean Architecture** with 3 implemented layers:
 
 ```
-┌─────────────────────────────────────────┐
-│   PRESENTATION LAYER (User Interface)   │
-│  - Popup UI (popup.html/css/js)        │
-│  - Background script (messaging hub)   │
-│  - Content script (page integration)   │
-└────────────┬────────────────────────────┘
-             │
-┌────────────▼──────────────────────────────┐
-│      DOMAIN LAYER (Business Logic)       │
-│  - csv-parser.js (CSV parsing & validation)
-│  - mapping.js (column mapping config)   │
-│  - table-handler.js (field extraction) │
-└────────────┬──────────────────────────────┘
-             │
-┌────────────▼──────────────────────────────┐
-│   INFRASTRUCTURE LAYER (Technical)      │
-│  - Config (centralized constants)       │
-│  - Logger (structured logging)          │
-│  - Errors (typed error hierarchy)      │
-│  - Storage (browser.storage abstraction)
-│  - MessageBus (event system)            │
-│  - Container (dependency injection)     │
+┌───────────────────────────────────────────┐
+│  PRESENTATION LAYER (User Interface)      │
+│  • Popup UI (popup.html/css/js)          │
+│  • Background script (messaging hub)     │
+│  • Content script (page integration)     │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│   DOMAIN LAYER (Business Logic)          │
+│  • csv-parser.js (CSV parsing)           │
+│  • mapping.js (column mapping config)   │
+│  • table-handler.js (field operations)  │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│ INFRASTRUCTURE LAYER (Technical Services)│
+│  • Config (centralized constants)       │
+│  • Logger (structured logging)          │
+│  • Errors (typed error hierarchy)       │
+│  • Storage (browser.storage abstraction)│
+│  • MessageBus (event system)            │
+│  • Container (dependency injection)     │
 └──────────────────────────────────────────┘
 ```
 
@@ -221,36 +221,54 @@ The codebase follows:
 ### CSV to Table Filling Flow
 
 ```
-User uploads CSV
+User uploads CSV file
     ↓
-CSVService.parse() → CsvData entity
+parseCSV() → parse & validate CSV content
     ↓
-User configures mapping
+validateCSVData() → check row counts, columns
     ↓
-MappingService.create() → Mapping entity
+User maps CSV columns to form fields
     ↓
-StorageRepository.save() → browser.storage
+createMapping() → create mapping config
     ↓
-User clicks "Fill Table"
+StorageRepository.saveMappingConfig() → save mapping
     ↓
-MessageBus.emit() → Background Script → Content Script
+User clicks "Fill Table" button
     ↓
-TableFiller.fill() → Write values to DOM
+MessageBus.emit('fillTable') → send to content script
     ↓
-Events triggered, form updated
+getTableFields() → extract form fields from DOM
     ↓
-Result sent back to popup
+fillFields() → write CSV values to form fields
+    ↓
+browser.tabs.sendMessage() → report success to popup
+    ↓
+Form updated, user sees success message
 ```
 
-### Message Flow
+### Function Architecture
+
+The extension uses domain functions instead of service classes:
+
+| Function | Module | Purpose |
+|----------|--------|---------|
+| `parseCSV(content)` | csv-parser.js | Parse raw CSV text into headers & rows |
+| `validateCSVData(data)` | csv-parser.js | Validate CSV against size/row/column limits |
+| `createMapping(headers, config)` | mapping.js | Create validated mapping config |
+| `getTableFields(element)` | table-handler.js | Extract form fields from HTML |
+| `fillFields(fields, rowData)` | table-handler.js | Fill form fields with data |
+
+### Message Flow Architecture
 
 The extension communicates via an event-driven architecture:
 
-1. **Popup → Background**: Messages via `MessageBus`
-2. **Background → Content**: Messages via `browser.tabs.sendMessage()`
-3. **Content → Popup**: Results via return value
+1. **Popup Layer**: User uploads CSV and configures mapping
+2. **Background Layer**: Receives fill request via `MessageBus.emit()`
+3. **Content Layer**: Receives message via `browser.tabs.sendMessage()`
+4. **DOM Update**: `fillFields()` updates form elements
+5. **Response**: Content script sends back success/error to popup
 
-All messages are validated and logged for debugging.
+All messages are validated through typed error handling and logged for debugging.
 
 ## 🔐 Security & Privacy
 
@@ -263,15 +281,17 @@ All messages are validated and logged for debugging.
 
 ## 🐛 Error Handling
 
-The extension provides clear, actionable error messages:
+The extension provides typed, actionable error messages:
 
-- **CSVError**: Invalid CSV format or structure
-- **MappingError**: Invalid column mapping configuration
-- **TableNotFoundError**: Target table not found on page
-- **StorageError**: Failed to save/load configuration
-- **TimeoutError**: Operation took too long
+| Error Type | When Thrown | Resolution |
+|-----------|-----------|-----------|
+| `CSVError` | Invalid CSV format, exceeds size/row/column limits | Check CSV file format and size |
+| `MappingError` | Invalid column mapping configuration | Verify column indices and field names match |
+| `TableNotFoundError` | Target table/form not found on page | Check page structure, ensure form exists |
+| `StorageError` | Failed to save/load configuration | Check browser storage permissions |
+| `TimeoutError` | Operation exceeded time limit | Reduce CSV size, check browser performance |
 
-All errors are logged with context for debugging.
+All errors include context logging for debugging and user-friendly messages in the UI.
 
 ## 📝 Configuration
 
