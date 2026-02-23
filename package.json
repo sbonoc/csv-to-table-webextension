@@ -6,15 +6,16 @@
   "author": "sbonoc",
   "scripts": {
     "start": "web-ext run",
-    "build": "web-ext build",
+    "build": "web-ext build --overwrite-dist",
     "lint": "web-ext lint",
     "test": "vitest",
-    "test:unit": "vitest run --reporter=verbose src/**/*.test.js popup/**/*.test.js",
-    "test:integration": "vitest run --reporter=verbose tests/integration",
-    "test:e2e": "playwright test",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "vitest run --reporter=json --outputFile=test-results/unit.json src/**/*.test.js popup/**/*.test.js 2>&1 && node scripts/generate-test-report.js",
+    "test:integration": "vitest run --reporter=json --outputFile=test-results/integration.json tests/integration 2>&1 && node scripts/generate-test-report.js",
+    "test:e2e": "playwright test --reporter=json --output=test-results/e2e.json 2>&1 && node scripts/generate-test-report.js",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e && node scripts/generate-test-report.js",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "ci:test": "npm run test:unit && npm run test:integration && npm run test:e2e"
   },
   "devDependencies": {
     "web-ext": "^7.10.0",
