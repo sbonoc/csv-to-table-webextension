@@ -52,8 +52,5 @@
     "table",
     "form-filler",
     "automation"
-  ],
-  "overrides": {
-    "ajv": "8.18.0"
-  }
+  ]
 }
