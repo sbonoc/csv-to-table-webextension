@@ -1,13 +1,19 @@
 {
   "name": "csv-to-table-filler",
   "version": "1.0.0",
-  "description": "Firefox extension that automates filling HTML tables using CSV files with custom column mapping",
+  "description": "Browser extension (multi-target foundation) that automates filling HTML tables using CSV files with custom column mapping",
   "license": "MIT",
   "author": "sbonoc",
   "scripts": {
-    "start": "web-ext run",
-    "build": "web-ext build --overwrite-dist",
-    "lint": "web-ext lint --ignore-files tests/** --ignore-files scripts/** --ignore-files test-results/** --ignore-files playwright-results/**",
+    "prepare:browser": "node scripts/prepare-browser-target.js",
+    "prepare:browser:firefox": "node scripts/prepare-browser-target.js firefox",
+    "prepare:browser:chrome": "node scripts/prepare-browser-target.js chrome",
+    "prepare:browser:edge": "node scripts/prepare-browser-target.js edge",
+    "start": "npm run prepare:browser:firefox && web-ext run",
+    "start:firefox": "npm run prepare:browser:firefox && web-ext run",
+    "build": "npm run prepare:browser:firefox && web-ext build --overwrite-dist",
+    "build:firefox": "npm run prepare:browser:firefox && web-ext build --overwrite-dist",
+    "lint": "npm run prepare:browser:firefox && web-ext lint --ignore-files tests/** --ignore-files scripts/** --ignore-files test-results/** --ignore-files playwright-results/**",
     "test": "vitest",
     "test:unit": "vitest run --reporter=json --outputFile=test-results/unit.json tests/unit 2>&1 | tail -1",
     "test:integration": "vitest run --reporter=json --outputFile=test-results/integration.json tests/integration 2>&1 | tail -1",
@@ -38,6 +44,9 @@
     "url": "https://github.com/sbonoc/firefox-addon-csv-to-table-filler.git"
   },
   "keywords": [
+    "browser-extension",
+    "webextension",
+    "multi-browser",
     "firefox",
     "csv",
     "table",

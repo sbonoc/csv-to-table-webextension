@@ -1,6 +1,14 @@
-# CSV to Table Filler - Firefox Add-on
+# CSV to Table Filler - Multi-Browser Foundation
 
-A Firefox extension that automates filling HTML tables and forms using CSV files, with intelligent column mapping and persistent configuration.
+A WebExtension that automates filling HTML tables and forms using CSV files, with intelligent column mapping and persistent configuration.
+
+Current implementation status:
+
+| Browser | Status | Notes |
+|---------|--------|-------|
+| Firefox | Implemented | Active target with working manifest and packaging |
+| Chrome | Pending | Scaffold prepared in `manifests/chrome/PENDING.md` |
+| Edge | Pending | Scaffold prepared in `manifests/edge/PENDING.md` |
 
 ## 📋 Features
 
@@ -19,16 +27,19 @@ A Firefox extension that automates filling HTML tables and forms using CSV files
 ```bash
 # Clone the repository
 git clone https://github.com/sbonoc/firefox-addon-csv-to-table-filler.git
-cd firefox-addon-csv-to-table-filler
+cd csv-table-filler-firefox-addon
 
 # Install dependencies
 npm install
 
-# Run the extension in Firefox
+# Run the extension (Firefox target)
 npm start
 
 # Or build for distribution
 npm run build
+
+# Optional: prepare browser target explicitly
+npm run prepare:browser:firefox
 ```
 
 ### For Users
@@ -41,7 +52,7 @@ npm run build
 ### Basic Workflow
 
 1. **Open a webpage** with tables or forms you want to fill
-2. **Click the extension icon** in Firefox toolbar
+2. **Click the extension icon** in the browser toolbar
 3. **Upload a CSV file** from your computer
 4. **Configure mapping**: Select the destination field for each CSV column
 5. **Select date transform mode** (optional)
@@ -137,7 +148,8 @@ tests/
 │   └── workflow.integration.test.js
 │
 ├── e2e/                    # End-to-end tests with Playwright
-│   └── addon.spec.js
+│   ├── addon.spec.js
+│   └── accessibility.spec.js
 │
 ├── mocks/                  # Mock objects for testing
 │   └── browser.js          # WebExtensions API mocks
@@ -151,6 +163,13 @@ tests/
 vitest.config.js           # Unit & integration test configuration
 playwright.config.js       # E2E test configuration
 manifest.json              # Firefox extension manifest
+manifests/
+├── firefox/
+│   └── manifest.json      # Active manifest target
+├── chrome/
+│   └── PENDING.md         # Pending work for Chrome support
+└── edge/
+    └── PENDING.md         # Pending work for Edge support
 package.json               # Dependencies and scripts
 ```
 
@@ -203,9 +222,12 @@ Current targets:
 ### Project Scripts
 
 ```bash
-npm start           # Run extension in Firefox
-npm run build       # Build for distribution
-npm run lint        # Lint with web-ext
+npm start                      # Run extension (Firefox target)
+npm run build                  # Build extension (Firefox target)
+npm run lint                   # Lint extension (Firefox target)
+npm run prepare:browser        # Prepare default target (Firefox)
+npm run prepare:browser:chrome # Validate pending Chrome target (expected to fail)
+npm run prepare:browser:edge   # Validate pending Edge target (expected to fail)
 npm run test        # Run Vitest suites (unit + integration)
 npm run test:e2e    # Run Playwright end-to-end tests
 npm run test:a11y   # Run Axe Core accessibility test for sidebar UI
@@ -354,7 +376,7 @@ Contributions are welcome! Here's how:
 ## 📋 Browser Compatibility
 
 - ✅ Firefox 90+
-- ❌ Chrome/Edge (not tested, uses Firefox-specific APIs)
+- ⏳ Chrome/Edge (pending, not implemented yet)
 - ❌ Safari (not supported)
 
 ## 📄 License
@@ -425,6 +447,9 @@ npm run test:integration
 # E2E tests (requires Playwright & Firefox)
 npm run test:e2e
 
+# Accessibility test for sidebar (Axe Core)
+npm run test:a11y
+
 # All tests with detailed report
 npm run test:all
 
@@ -449,6 +474,9 @@ Current version: **1.0.0**
 - [ ] Batch processing with progress bar
 - [ ] Persist sidebar UI preferences (date format, selected table)
 - [ ] Optional language selector in UI
+- [x] Multi-browser foundation (targeted manifests + target preparation script)
+- [ ] Chrome implementation
+- [ ] Edge implementation
 
 ## 🐛 Known Issues
 

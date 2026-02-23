@@ -42,6 +42,20 @@ describe('Presentation - Messaging Security', () => {
       expect(response.error).toContain('Invalid or unauthorized action');
     });
 
+    it('should accept allowed extension protocol when sender id matches', async () => {
+      await import('../../../src/presentation/background.bootstrap.js');
+
+      const [listener] = global.browser.runtime.getListeners('onMessage');
+      const response = await callOnMessageListener(
+        listener,
+        { action: 'getMappingConfig' },
+        { id: global.browser.runtime.id, url: `chrome-extension://${global.browser.runtime.id}/popup.html` }
+      );
+
+      expect(response.success).toBe(true);
+      expect(response.mapping).toEqual({});
+    });
+
     it('should reject malicious mapping payloads', async () => {
       await import('../../../src/presentation/background.bootstrap.js');
 
@@ -93,6 +107,28 @@ describe('Presentation - Messaging Security', () => {
       expect(response.success).toBe(true);
       expect(response.tables[0].fields.map(field => field.name)).toEqual(['nrua', 'finalidad']);
       expect(response.tables[0].fieldsCount).toBe(2);
+    });
+
+    it('should accept allowed extension protocol when sender id matches', async () => {
+      document.body.innerHTML = `
+        <table>
+          <tbody>
+            <tr><td><input name="nrua" /></td></tr>
+          </tbody>
+        </table>
+      `;
+
+      await import('../../../src/presentation/content-script.bootstrap.js');
+
+      const [listener] = global.browser.runtime.getListeners('onMessage');
+      const response = await callOnMessageListener(
+        listener,
+        { action: 'getTableInfo' },
+        { id: global.browser.runtime.id, url: `chrome-extension://${global.browser.runtime.id}/popup.html` }
+      );
+
+      expect(response.success).toBe(true);
+      expect(response.tables.length).toBe(1);
     });
 
     it('should scroll to target table when highlight request enables scroll', async () => {

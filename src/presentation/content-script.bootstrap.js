@@ -1,6 +1,13 @@
 (() => {
   const ALLOWED_ACTIONS = new Set(['getTableInfo', 'fillTable', 'highlightTargetTable']);
   const ALLOWED_DATE_TRANSFORMS = new Set(['auto', 'none', 'dd.mm.yyyy', 'dd/mm/yyyy', 'yyyy-mm-dd']);
+  const ALLOWED_EXTENSION_PROTOCOLS = new Set([
+    'moz-extension:',
+    'chrome-extension:',
+    'safari-web-extension:',
+    'ms-browser-extension:',
+    'edge-extension:'
+  ]);
   const TARGET_TABLE_CLASS = 'csv-filler-target-table-highlight';
   const TARGET_FIELD_CLASS = 'csv-filler-target-field-highlight';
 
@@ -18,11 +25,20 @@
     }
 
     const senderSource = sender.url || sender.origin || '';
-    if (senderSource && !senderSource.startsWith('moz-extension://')) {
+    if (senderSource && !hasAllowedSenderProtocol(senderSource)) {
       return false;
     }
 
     return true;
+  }
+
+  function hasAllowedSenderProtocol(senderSource) {
+    try {
+      const protocol = new URL(senderSource).protocol;
+      return ALLOWED_EXTENSION_PROTOCOLS.has(protocol);
+    } catch (_error) {
+      return false;
+    }
   }
 
   function validateRequestEnvelope(request) {

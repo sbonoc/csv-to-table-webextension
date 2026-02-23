@@ -1,6 +1,13 @@
 (() => {
   const STORAGE_KEY_MAPPING = 'fieldMapping';
   const MAX_CSV_COLUMNS = 500;
+  const ALLOWED_EXTENSION_PROTOCOLS = new Set([
+    'moz-extension:',
+    'chrome-extension:',
+    'safari-web-extension:',
+    'ms-browser-extension:',
+    'edge-extension:'
+  ]);
   const ALLOWED_ACTIONS = new Set([
     'saveMappingConfig',
     'getMappingConfig',
@@ -21,11 +28,20 @@
     }
 
     const senderSource = sender.url || sender.origin || '';
-    if (senderSource && !senderSource.startsWith('moz-extension://')) {
+    if (senderSource && !hasAllowedSenderProtocol(senderSource)) {
       return false;
     }
 
     return true;
+  }
+
+  function hasAllowedSenderProtocol(senderSource) {
+    try {
+      const protocol = new URL(senderSource).protocol;
+      return ALLOWED_EXTENSION_PROTOCOLS.has(protocol);
+    } catch (_error) {
+      return false;
+    }
   }
 
   function validateRequestEnvelope(request) {
