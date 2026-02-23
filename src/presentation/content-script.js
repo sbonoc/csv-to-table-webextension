@@ -20,22 +20,85 @@ container.initializeDefaultServices();
 
 const logger = container.get('logger');
 
+const ALLOWED_ACTIONS = new Set([
+    'getTableInfo',
+    'fillTable'
+]);
+
 logger.info('Content script initializing...');
+
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isValidSender(sender) {
+    if (!sender || sender.id !== browser.runtime.id) {
+        return false;
+    }
+
+    if (sender.url && !sender.url.startsWith(`moz-extension://${browser.runtime.id}/`)) {
+        return false;
+    }
+
+    return true;
+}
+
+function validateRequestEnvelope(request) {
+    if (!isPlainObject(request)) {
+        throw new Error('Request must be a valid object');
+    }
+
+    if (typeof request.action !== 'string' || !ALLOWED_ACTIONS.has(request.action)) {
+        throw new Error('Invalid or unauthorized action');
+    }
+}
+
+function validateFillRequestData(data) {
+    if (!isPlainObject(data)) {
+        throw new Error('Fill payload must be an object');
+    }
+
+    if (!Number.isInteger(data.tableIndex) || data.tableIndex < 0) {
+        throw new Error('Table index is required and must be a non-negative integer');
+    }
+
+    if (!isPlainObject(data.mapping)) {
+        throw new Error('Mapping is required and must be an object');
+    }
+
+    if (!Array.isArray(data.csvRow)) {
+        throw new Error('CSV row data is required and must be an array');
+    }
+
+    if (Object.keys(data.mapping).length > 500) {
+        throw new Error('Mapping exceeds allowed size');
+    }
+
+    if (data.csvRow.length > 500) {
+        throw new Error('CSV row exceeds allowed size');
+    }
+}
 
 /**
  * Handle messages from popup
  */
 async function handleMessage(request, sender) {
-    logger.debug('Message received from popup', { action: request.action });
+    logger.debug('Message received from popup', { action: request?.action });
 
     try {
+        if (!isValidSender(sender)) {
+            throw new Error('Unauthorized message sender');
+        }
+
+        validateRequestEnvelope(request);
+
         switch (request.action) {
             case 'getTableInfo':
                 return handleGetTableInfo();
-            
+
             case 'fillTable':
                 return handleFillTable(request.data);
-            
+
             default:
                 logger.warn('Unknown action', { action: request.action });
                 return { success: false, error: 'Unknown action' };
@@ -55,10 +118,10 @@ function handleGetTableInfo() {
     try {
         const tableSelectors = ['table', 'form', '[role="table"]'];
         const allElements = document.querySelectorAll(tableSelectors.join(','));
-        
+
         const tablesInfo = Array.from(allElements).map((element, index) => {
             const fields = getTableFields(element);
-            
+
             return {
                 index: index,
                 tag: element.tagName.toLowerCase(),
@@ -69,15 +132,15 @@ function handleGetTableInfo() {
         });
 
         logger.info('Found tables on page', { count: tablesInfo.length });
-        return { 
-            success: true, 
-            tables: tablesInfo 
+        return {
+            success: true,
+            tables: tablesInfo
         };
     } catch (error) {
         logger.error('Failed to get table info', error);
-        return { 
-            success: false, 
-            error: error.message 
+        return {
+            success: false,
+            error: error.message
         };
     }
 }
@@ -86,28 +149,18 @@ function handleGetTableInfo() {
  * Fill table with CSV data
  */
 function handleFillTable(data) {
-    logger.debug('Filling table with data', { 
-        tableIndex: data.tableIndex,
-        mappingKeys: Object.keys(data.mapping || {}).length
-    });
-
     try {
-        if (!data.tableIndex && data.tableIndex !== 0) {
-            throw new Error('Table index is required');
-        }
+        validateFillRequestData(data);
 
-        if (!data.mapping || typeof data.mapping !== 'object') {
-            throw new Error('Mapping is required');
-        }
-
-        if (!data.csvRow || !Array.isArray(data.csvRow)) {
-            throw new Error('CSV row data is required');
-        }
+        logger.debug('Filling table with data', {
+            tableIndex: data.tableIndex,
+            mappingKeys: Object.keys(data.mapping || {}).length
+        });
 
         // Get all tables on page
         const tableSelectors = ['table', 'form', '[role="table"]'];
         const allTables = document.querySelectorAll(tableSelectors.join(','));
-        
+
         if (data.tableIndex >= allTables.length) {
             throw new Error(`Table index ${data.tableIndex} not found`);
         }
@@ -126,24 +179,24 @@ function handleFillTable(data) {
         // Fill fields using table-handler
         const result = fillFields(table, fieldData);
 
-        logger.info('Table fill complete', { 
-            filled: result.filled, 
-            failed: result.failed.length 
+        logger.info('Table fill complete', {
+            filled: result.filled,
+            failed: result.failed.length
         });
 
         return {
             success: result.success,
             filled: result.filled,
             failed: result.failed,
-            message: result.success 
+            message: result.success
                 ? `Filled ${result.filled} fields successfully`
                 : `Failed to fill some fields`
         };
     } catch (error) {
         logger.error('Failed to fill table', error);
-        return { 
-            success: false, 
-            error: error.message 
+        return {
+            success: false,
+            error: error.message
         };
     }
 }
@@ -158,9 +211,9 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })
         .catch(error => {
             logger.error('Unhandled message error', error);
-            sendResponse({ 
-                success: false, 
-                error: error.message 
+            sendResponse({
+                success: false,
+                error: error.message
             });
         });
 

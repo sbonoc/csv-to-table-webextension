@@ -20,7 +20,61 @@ const logger = container.get('logger');
 const storage = container.get('storage');
 const messageBus = container.get('messageBus');
 
+const ALLOWED_ACTIONS = new Set([
+    'saveMappingConfig',
+    'getMappingConfig',
+    'deleteMappingConfig'
+]);
+
 logger.info('Background script initializing...');
+
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isValidSender(sender) {
+    if (!sender || sender.id !== browser.runtime.id) {
+        return false;
+    }
+
+    if (sender.url && !sender.url.startsWith(`moz-extension://${browser.runtime.id}/`)) {
+        return false;
+    }
+
+    return true;
+}
+
+function validateRequestEnvelope(request) {
+    if (!isPlainObject(request)) {
+        throw new Error('Request must be a valid object');
+    }
+
+    if (typeof request.action !== 'string' || !ALLOWED_ACTIONS.has(request.action)) {
+        throw new Error('Invalid or unauthorized action');
+    }
+}
+
+function validateMappingPayload(mapping) {
+    if (!isPlainObject(mapping)) {
+        throw new Error('Mapping must be an object');
+    }
+
+    const entries = Object.entries(mapping);
+    if (entries.length > CONFIG.LIMITS.MAX_CSV_COLUMNS) {
+        throw new Error('Mapping exceeds maximum allowed columns');
+    }
+
+    entries.forEach(([key, value]) => {
+        const index = Number(key);
+        if (!Number.isInteger(index) || index < 0 || index >= CONFIG.LIMITS.MAX_CSV_COLUMNS) {
+            throw new Error(`Invalid mapping index: ${key}`);
+        }
+
+        if (typeof value !== 'string' || value.trim() === '') {
+            throw new Error(`Invalid mapped field for index: ${key}`);
+        }
+    });
+}
 
 /**
  * Initialize extension storage with defaults
@@ -28,12 +82,12 @@ logger.info('Background script initializing...');
 async function initializeStorage() {
     try {
         const mappingConfig = await storage.getMappingConfig();
-        
+
         if (!mappingConfig || Object.keys(mappingConfig).length === 0) {
             logger.debug('First time setup: initializing storage');
             await storage.saveMappingConfig({});
         }
-        
+
         logger.info('Storage initialized successfully');
     } catch (error) {
         logger.error('Failed to initialize storage', error);
@@ -44,22 +98,28 @@ async function initializeStorage() {
  * Handle message from popup or content scripts
  */
 async function handleMessage(request, sender) {
-    logger.debug('Message received', { 
-        action: request.action, 
-        sender: sender.url 
+    logger.debug('Message received', {
+        action: request?.action,
+        sender: sender?.url
     });
 
     try {
+        if (!isValidSender(sender)) {
+            throw new Error('Unauthorized message sender');
+        }
+
+        validateRequestEnvelope(request);
+
         switch (request.action) {
             case 'saveMappingConfig':
                 return await handleSaveMappingConfig(request);
-            
+
             case 'getMappingConfig':
                 return await handleGetMappingConfig();
-            
+
             case 'deleteMappingConfig':
                 return await handleDeleteMappingConfig();
-            
+
             default:
                 logger.warn('Unknown action', { action: request.action });
                 return { success: false, error: 'Unknown action' };
@@ -75,20 +135,17 @@ async function handleMessage(request, sender) {
  */
 async function handleSaveMappingConfig(request) {
     logger.debug('Saving mapping configuration');
-    
+
     if (!request.data || !request.data.mapping) {
         throw new Error('Mapping data is required');
     }
 
     const mapping = request.data.mapping;
-    
-    // Validate mapping
-    if (typeof mapping !== 'object' || Array.isArray(mapping)) {
-        throw new Error('Mapping must be an object');
-    }
+
+    validateMappingPayload(mapping);
 
     await storage.saveMappingConfig(mapping);
-    
+
     // Emit event for other listeners
     await messageBus.emit({
         type: 'MAPPING_SAVED',
@@ -104,11 +161,11 @@ async function handleSaveMappingConfig(request) {
  */
 async function handleGetMappingConfig() {
     logger.debug('Retrieving mapping configuration');
-    
+
     const mapping = await storage.getMappingConfig();
-    return { 
-        success: true, 
-        mapping: mapping || {} 
+    return {
+        success: true,
+        mapping: mapping || {}
     };
 }
 
@@ -117,9 +174,9 @@ async function handleGetMappingConfig() {
  */
 async function handleDeleteMappingConfig() {
     logger.debug('Deleting mapping configuration');
-    
+
     await storage.saveMappingConfig({});
-    
+
     await messageBus.emit({
         type: 'MAPPING_DELETED',
         data: { timestamp: new Date().toISOString() }
@@ -137,8 +194,8 @@ browser.runtime.onInstalled.addListener((details) => {
         logger.info('Extension installed');
         initializeStorage();
     } else if (details.reason === 'update') {
-        logger.info('Extension updated', { 
-            previousVersion: details.previousVersion 
+        logger.info('Extension updated', {
+            previousVersion: details.previousVersion
         });
     }
 });
@@ -153,9 +210,9 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })
         .catch(error => {
             logger.error('Error handling message', error);
-            sendResponse({ 
-                success: false, 
-                error: error.message 
+            sendResponse({
+                success: false,
+                error: error.message
             });
         });
 

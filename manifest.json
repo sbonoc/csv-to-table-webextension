@@ -5,12 +5,11 @@
   "description": "Automatically fill HTML tables with CSV data using custom column mapping",
   "permissions": [
     "activeTab",
-    "scripting",
-    "storage",
-    "webRequest"
+    "storage"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
   "action": {
     "default_popup": "src/presentation/popup/popup.html",
@@ -19,7 +18,8 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "http://*/*",
+        "https://*/*"
       ],
       "js": [
         "src/presentation/content-script.js"
