@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "CSV to Table Filler",
+  "version": "1.0.0",
+  "description": "Automatically fill HTML tables with CSV data using custom column mapping",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "CSV to Table Filler"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content-script.js"
+      ]
+    }
+  ],
+  "background": {
+    "scripts": [
+      "src/background.js"
+    ]
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  }
+}
