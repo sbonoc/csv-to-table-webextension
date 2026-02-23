@@ -1,0 +1,26 @@
+{
+  "name": "csv-to-table-filler",
+  "version": "0.1.0",
+  "description": "Firefox extension that automates filling HTML tables using CSV files with custom column mapping",
+  "license": "MIT",
+  "author": "sbonoc",
+  "scripts": {
+    "start": "web-ext run",
+    "build": "web-ext build",
+    "lint": "web-ext lint"
+  },
+  "devDependencies": {
+    "web-ext": "^7.10.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sbonoc/firefox-addon-csv-to-table-filler.git"
+  },
+  "keywords": [
+    "firefox",
+    "csv",
+    "table",
+    "form-filler",
+    "automation"
+  ]
+}
