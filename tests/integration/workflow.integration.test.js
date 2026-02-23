@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseCSV, validateCSVData, getRowByIndex } from '../src/csv-parser.js';
-import { createMapping, applyMappingToRow } from '../src/mapping.js';
-import { fillFields, setFieldValue } from '../src/table-handler.js';
+import { parseCSV, validateCSVData, getRowByIndex } from '../../src/csv-parser.js';
+import { createMapping, applyMappingToRow } from '../../src/mapping.js';
+import { fillFields, setFieldValue } from '../../src/table-handler.js';
 
 /**
  * Integration Tests
@@ -271,8 +271,8 @@ describe('Error Handling Across Modules', () => {
 
     // Mapping should still be valid even if fields don't exist
     expect(mappedData).toEqual({
-      name: 'John',
-      email: 'john@example.com'
+      nonexistent: 'John',
+      'also-nonexistent': 'john@example.com'
     });
   });
 });

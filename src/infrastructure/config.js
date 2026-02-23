@@ -77,8 +77,21 @@ export const CONFIG = {
  * Determine if running in development mode
  */
 export function isDevelopment() {
-    return process.env.NODE_ENV === 'development' || 
-           typeof browser !== 'undefined' && browser.runtime.getURL('manifest.json').includes('.dev');
+    // Check NODE_ENV first
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+        return true;
+    }
+    
+    // Check if browser API is available (not in tests)
+    if (typeof browser !== 'undefined' && browser.runtime && typeof browser.runtime.getURL === 'function') {
+        try {
+            return browser.runtime.getURL('manifest.json').includes('.dev');
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    return false;
 }
 
 /**

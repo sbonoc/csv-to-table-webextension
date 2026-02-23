@@ -26,8 +26,10 @@ export default defineConfig({
     },
     include: [
       'src/**/*.test.js',
+      'src/**/*.test.js',
       'popup/**/*.test.js',
-      'tests/**/*.test.js'
+      'tests/**/*.test.js',
+      'tests/**/*.integration.test.js'
     ],
     exclude: [
       'node_modules',

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Logger } from '../infrastructure/logger.js';
-import { CONFIG, isDevelopment, getLogLevel } from '../infrastructure/config.js';
+import { Logger } from './logger.js';
+import { CONFIG, isDevelopment, getLogLevel } from './config.js';
 
 describe('Infrastructure - Logger', () => {
     let logger;

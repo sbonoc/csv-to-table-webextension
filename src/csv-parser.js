@@ -10,8 +10,12 @@
  * @throws {Error} If CSV is empty or malformed
  */
 export function parseCSV(csvContent) {
-  if (!csvContent || typeof csvContent !== 'string') {
+  if (typeof csvContent !== 'string') {
     throw new Error('Invalid CSV content: must be a non-empty string');
+  }
+
+  if (csvContent.trim() === '') {
+    throw new Error('CSV file is empty');
   }
 
   const lines = csvContent.split('\n').filter(line => line.trim());
