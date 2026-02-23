@@ -12,10 +12,55 @@ const LOG_LEVELS = {
     error: 3
 };
 
+const REDACTED = '[REDACTED]';
+const SENSITIVE_KEY_PATTERN = /(password|token|secret|authorization|cookie|csvrow|mapping|apikey|api_key|session|email)/i;
+
+function sanitizeForLog(value, depth = 0) {
+    if (value === null || value === undefined) {
+        return value;
+    }
+
+    if (depth > 3) {
+        return '[MaxDepth]';
+    }
+
+    if (value instanceof Error) {
+        return {
+            name: value.name,
+            message: value.message
+        };
+    }
+
+    if (Array.isArray(value)) {
+        if (value.length > 25) {
+            return `[Array(${value.length})]`;
+        }
+        return value.map(item => sanitizeForLog(item, depth + 1));
+    }
+
+    if (typeof value === 'object') {
+        const sanitized = {};
+        Object.entries(value).forEach(([key, nestedValue]) => {
+            if (SENSITIVE_KEY_PATTERN.test(key)) {
+                sanitized[key] = REDACTED;
+                return;
+            }
+            sanitized[key] = sanitizeForLog(nestedValue, depth + 1);
+        });
+        return sanitized;
+    }
+
+    if (typeof value === 'string' && value.length > 300) {
+        return `${value.slice(0, 300)}...[truncated]`;
+    }
+
+    return value;
+}
+
 export class Logger {
     constructor(context = 'Extension', logLevel = null) {
         this.context = context;
-        this.logLevel = logLevel || LOG_LEVELS[getLogLevel()];
+        this.logLevel = logLevel ?? LOG_LEVELS[getLogLevel()];
     }
 
     /**
@@ -23,8 +68,9 @@ export class Logger {
      */
     debug(message, data = null) {
         if (this.logLevel <= LOG_LEVELS.debug) {
-            const output = this.formatMessage('DEBUG', message, data);
-            console.debug(output, data);
+            const sanitizedData = sanitizeForLog(data);
+            const output = this.formatMessage('DEBUG', message, sanitizedData);
+            console.debug(output, sanitizedData);
         }
     }
 
@@ -33,8 +79,9 @@ export class Logger {
      */
     info(message, data = null) {
         if (this.logLevel <= LOG_LEVELS.info) {
-            const output = this.formatMessage('INFO', message, data);
-            console.info(output, data);
+            const sanitizedData = sanitizeForLog(data);
+            const output = this.formatMessage('INFO', message, sanitizedData);
+            console.info(output, sanitizedData);
         }
     }
 
@@ -43,8 +90,9 @@ export class Logger {
      */
     warn(message, data = null) {
         if (this.logLevel <= LOG_LEVELS.warn) {
-            const output = this.formatMessage('WARN', message, data);
-            console.warn(output, data);
+            const sanitizedData = sanitizeForLog(data);
+            const output = this.formatMessage('WARN', message, sanitizedData);
+            console.warn(output, sanitizedData);
         }
     }
 
@@ -53,8 +101,9 @@ export class Logger {
      */
     error(message, error = null) {
         if (this.logLevel <= LOG_LEVELS.error) {
-            const output = this.formatMessage('ERROR', message, error);
-            console.error(output, error);
+            const sanitizedError = sanitizeForLog(error);
+            const output = this.formatMessage('ERROR', message, sanitizedError);
+            console.error(output, sanitizedError);
         }
     }
 
@@ -64,11 +113,11 @@ export class Logger {
     formatMessage(level, message, data) {
         const timestamp = new Date().toISOString();
         const context = `[${timestamp}] [${level}] [${this.context}]`;
-        
+
         if (data) {
             return `${context} ${message}`;
         }
-        
+
         return `${context} ${message}`;
     }
 

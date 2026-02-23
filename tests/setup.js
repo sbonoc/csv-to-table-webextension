@@ -8,6 +8,7 @@ global.browser = createBrowserMock();
 global.console = {
   ...console,
   log: vi.fn(),
+  info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn(),
   debug: vi.fn()

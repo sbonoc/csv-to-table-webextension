@@ -66,6 +66,7 @@ export const createRuntimeMock = () => {
   const listeners = {};
 
   return {
+    id: 'csv-to-table-filler@test.local',
     onMessage: {
       addListener: vi.fn((callback) => {
         if (!listeners['onMessage']) {
