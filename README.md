@@ -55,86 +55,106 @@ Bob,Johnson,bob@example.com,Marketing
 
 ## 🏗️ Architecture
 
-The project follows **Clean Architecture** with clear separation of concerns:
+The project follows **Clean Architecture** with 3 implemented layers:
 
 ```
 ┌─────────────────────────────────────────┐
-│        POPUP (User Interface)           │
-│  - CSV upload                          │
-│  - Column mapping UI                   │
-│  - Progress and status                 │
+│   PRESENTATION LAYER (User Interface)   │
+│  - Popup UI (popup.html/css/js)        │
+│  - Background script (messaging hub)   │
+│  - Content script (page integration)   │
 └────────────┬────────────────────────────┘
              │
 ┌────────────▼──────────────────────────────┐
-│    APPLICATION LAYER (Services)          │
-│  - CSVService                           │
-│  - MappingService                       │
-│  - TableFillService                     │
-└────────────┬──────────────────────────────┘
-             │
-┌────────────▼──────────────────────────────┐
 │      DOMAIN LAYER (Business Logic)       │
-│  - CsvData (parsing, validation)        │
-│  - Mapping (configuration, application) │
-│  - TableInfo (field detection)          │
+│  - csv-parser.js (CSV parsing & validation)
+│  - mapping.js (column mapping config)   │
+│  - table-handler.js (field extraction) │
 └────────────┬──────────────────────────────┘
              │
 ┌────────────▼──────────────────────────────┐
-│    INFRASTRUCTURE LAYER (Technical)     │
+│   INFRASTRUCTURE LAYER (Technical)      │
 │  - Config (centralized constants)       │
 │  - Logger (structured logging)          │
-│  - Errors (error hierarchy)             │
-│  - Storage (browser.storage abstraction)│
+│  - Errors (typed error hierarchy)      │
+│  - Storage (browser.storage abstraction)
 │  - MessageBus (event system)            │
 │  - Container (dependency injection)     │
 └──────────────────────────────────────────┘
 ```
 
+### Key Design Patterns
+
+- **Dependency Injection**: Auto-injected services via IoC Container
+- **Event-Driven**: MessageBus for decoupled communication
+- **Error Handling**: Typed errors (CSVError, MappingError, etc)
+- **Logging**: Structured context-aware logging
+- **Repository Pattern**: StorageRepository abstracts browser.storage
+- **Test Pyramid**: 70% unit, 20% integration, 10% E2E
+
 ## 📂 Project Structure
 
 ```
 src/
-├── infrastructure/          # Technical services
+├── infrastructure/          # Technical services (DI, logging, storage, etc)
 │   ├── config.js           # Configuration & constants
-│   ├── logger.js           # Logging system
-│   ├── errors.js           # Error classes
-│   ├── storage.js          # Storage abstraction
-│   ├── message-bus.js      # Event system
-│   ├── container.js        # Dependency injection
-│   └── index.js            # Exports
+│   ├── logger.js           # Structured logging system
+│   ├── errors.js           # Error class hierarchy
+│   ├── storage.js          # browser.storage abstraction
+│   ├── message-bus.js      # Event system with middleware & priority
+│   ├── container.js        # Dependency Injection / IoC Container
+│   ├── index.js            # Barrel exports
+│   └── *.test.js           # Infrastructure tests
 │
-├── core/                    # Business logic & entities
-│   ├── csv-parser.js       # CSV parsing
-│   ├── mapping.js          # Mapping logic
-│   ├── table-handler.js    # DOM manipulation
+├── domain/                  # Business logic & entities
+│   ├── csv-parser.js       # CSV parsing and validation
+│   ├── mapping.js          # Column mapping configuration
+│   └── table-handler.js    # HTML form field extraction & filling
 │
-├── popup/                   # Popup UI
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-│
-├── src/
-│   ├── background.js       # Background script
-│   └── content-script.js   # Content script
+├── background.js           # Background script persistence & messaging
+└── content-script.js       # Content script for web page context
+
+popup/                       # User interface
+├── popup.html              # Popup UI markup
+├── popup.css               # Popup styling
+└── popup.js                # Popup logic with service integration
 
 tests/
-├── mocks/                  # Mock objects
-├── integration/            # Integration tests
-└── e2e/                    # End-to-end tests
+├── unit/                   # Unit tests for domain logic
+│   ├── csv-parser.test.js
+│   ├── mapping.test.js
+│   └── table-handler.test.js
+│
+├── integration/            # Integration tests for workflows
+│   └── workflow.integration.test.js
+│
+├── e2e/                    # End-to-end tests with Playwright
+│   └── addon.spec.js
+│
+├── mocks/                  # Mock objects for testing
+│   └── browser.js          # WebExtensions API mocks
+│
+└── setup.js                # Global test setup
 
-vitest.config.js            # Unit test configuration
-playwright.config.js        # E2E test configuration
-package.json
-manifest.json
+.github/
+└── workflows/
+    └── build-and-release.yml  # GitHub Actions CI/CD
+
+vitest.config.js           # Unit & integration test configuration
+playwright.config.js       # E2E test configuration
+manifest.json              # Firefox extension manifest
+package.json               # Dependencies and scripts
 ```
 
 ## 🧪 Testing
 
 The project uses a **Test Pyramid** approach with clear separation:
 
-- **Unit Tests** (70%): Individual functions tested in isolation with fast feedback
-- **Integration Tests** (20%): Module interactions and workflows
-- **E2E Tests** (10%): Complete user journeys in real browser
+- **Unit Tests** (70%): Tests in `tests/unit/` covering individual functions with fast feedback
+- **Integration Tests** (20%): Tests in `tests/integration/` covering module interactions and workflows  
+- **E2E Tests** (10%): Tests in `tests/e2e/` covering complete user journeys in real Playwright browser
+
+**Current Coverage:** 128 automated tests (96 unit + integration, 32 infrastructure)
 
 ### Run Tests
 
@@ -145,8 +165,18 @@ npm run test:unit
 # Integration tests
 npm run test:integration
 
-# E2E tests with Playwright
+# E2E tests with Playwright (requires Firefox)
 npm run test:e2e
+
+# All tests with consolidated report
+npm run test:all
+
+# Watch mode for development
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
 
 # All tests
 npm run test:all
