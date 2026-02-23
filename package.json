@@ -15,6 +15,7 @@
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e && node scripts/generate-test-report.js",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
+    "test:server": "node scripts/test-server.js",
     "ci:test": "npm run test:unit && npm run test:integration && npm run test:e2e"
   },
   "devDependencies": {
