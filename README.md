@@ -1,4 +1,4 @@
-# CSV to Table Filler - Multi-Browser Foundation
+# CSV to Table Filler - Multi-Browser Add-On
 
 A WebExtension that automates filling HTML tables and forms using CSV files, with intelligent column mapping and persistent configuration.
 
