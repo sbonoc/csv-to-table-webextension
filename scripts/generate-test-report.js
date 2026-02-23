@@ -10,7 +10,7 @@ function parseVitestReport(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(content);
-    
+
     let passed = data.numPassedTests || 0;
     let failed = data.numFailedTests || 0;
     let skipped = data.numPendingTests || data.numTodoTests || 0;
@@ -61,7 +61,7 @@ function parsePlaywrightReport(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(content);
-    
+
     let passed = 0;
     let failed = 0;
     let skipped = 0;
@@ -127,7 +127,7 @@ function createTable(headers, rows) {
   // Calculate column widths
   const colWidths = headers.map((header, idx) => {
     const headerLen = String(header).length;
-    const maxRowLen = Math.max(...rows.map(row => String(row[idx] || '').length));
+    const maxRowLen = Math.max(...rows.map(row => String(row[idx] ?? '').length));
     return Math.max(headerLen, maxRowLen) + 2;
   });
 
@@ -138,7 +138,7 @@ function createTable(headers, rows) {
 
   // Create rows
   rows.forEach((row, idx) => {
-    table += '│' + row.map((cell, i) => padCenter(String(cell || ''), colWidths[i])).join('│') + '│\n';
+    table += '│' + row.map((cell, i) => padCenter(String(cell ?? ''), colWidths[i])).join('│') + '│\n';
   });
 
   // Close table
@@ -168,17 +168,12 @@ function padRight(str, width) {
  * Generate test pyramid table
  */
 function generateTestPyramid(unit, integration, e2e) {
-  const total = unit.total + integration.total + e2e.total;
-  const unitPercent = total > 0 ? Math.round((unit.total / total) * 100) : 0;
-  const integrationPercent = total > 0 ? Math.round((integration.total / total) * 100) : 0;
-  const e2ePercent = total > 0 ? Math.round((e2e.total / total) * 100) : 0;
-
   // Compact table format
   const headers = ['Type', 'Count', 'Pass', 'Fail', 'Skip', 'Duration (s)'];
   const rows = [
-    ['🏗️ Unit', unit.total, unit.passed, unit.failed, unit.skipped, (unit.duration / 1000).toFixed(2)],
-    ['📦 Integ', integration.total, integration.passed, integration.failed, integration.skipped, (integration.duration / 1000).toFixed(2)],
-    ['🎯 E2E', e2e.total, e2e.passed, e2e.failed, e2e.skipped, (e2e.duration / 1000).toFixed(2)]
+    ['Unit', unit.total, unit.passed, unit.failed, unit.skipped, (unit.duration / 1000).toFixed(2)],
+    ['Integ', integration.total, integration.passed, integration.failed, integration.skipped, (integration.duration / 1000).toFixed(2)],
+    ['E2E', e2e.total, e2e.passed, e2e.failed, e2e.skipped, (e2e.duration / 1000).toFixed(2)]
   ];
 
   return createTable(headers, rows);
@@ -200,10 +195,10 @@ function generateSummaryReport(unit, integration, e2e) {
   const summaryHeaders = ['Metric', 'Count', 'Percentage'];
   const summaryRows = [
     ['Total Tests', totalTests, '100%'],
-    ['✅ Passed', totalPassed, `${successRate}%`],
-    ['❌ Failed', totalFailed, totalTests > 0 ? `${Math.round((totalFailed / totalTests) * 100)}%` : '0%'],
-    ['⏭️ Skipped', totalSkipped, totalTests > 0 ? `${Math.round((totalSkipped / totalTests) * 100)}%` : '0%'],
-    ['⏱️ Total Duration', `${(totalDuration / 1000).toFixed(2)}s`, '-']
+    ['Passed', totalPassed, `${successRate}%`],
+    ['Failed', totalFailed, totalTests > 0 ? `${Math.round((totalFailed / totalTests) * 100)}%` : '0%'],
+    ['Skipped', totalSkipped, totalTests > 0 ? `${Math.round((totalSkipped / totalTests) * 100)}%` : '0%'],
+    ['Total Duration', `${(totalDuration / 1000).toFixed(2)}s`, '-']
   ];
 
   const summaryTable = createTable(summaryHeaders, summaryRows);
@@ -246,7 +241,7 @@ Status: ${status}
  */
 function main() {
   const resultsDir = 'test-results';
-  
+
   // Create test-results directory if it doesn't exist
   if (!fs.existsSync(resultsDir)) {
     fs.mkdirSync(resultsDir, { recursive: true });
@@ -261,7 +256,7 @@ function main() {
   // Parse reports
   let unitReport = { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
   let integrationReport = { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
-  
+
   // Check if vitest.json exists (contains both unit and integration tests)
   if (fs.existsSync(vitestJsonPath)) {
     const vitestData = parseVitestReport(vitestJsonPath);
@@ -276,7 +271,7 @@ function main() {
       integrationReport = parseVitestReport(integrationPath);
     }
   }
-  
+
   const e2eReport = fs.existsSync(e2ePath) ? parsePlaywrightReport(e2ePath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
 
   // Generate summary
