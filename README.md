@@ -307,36 +307,84 @@ MIT License - see LICENSE file for details
 
 ## 🚀 Continuous Integration & Deployment
 
-The project includes automated GitHub Actions that:
+The project includes **automated GitHub Actions** that:
 
-1. **Test** automatically on every push (Unit, Integration, E2E)
-2. **Build** the extension to `.xpi` file
-3. **Report** test results with Test Pyramid visualization
-4. **Release** automatically when you push a version tag
+### Automatic Testing & Building
+- Runs on every push to `main` and `develop` branches
+- Tests on multiple Node.js versions (18.x, 20.x)
+- **Unit tests** (70%): Fast, isolated function tests
+- **Integration tests** (20%): Module interaction tests
+- **E2E tests** (10%): Full user journey tests with real Firefox browser
 
-### Test Results Dashboard
+### Test Report with Test Pyramid
 
-After each test run, GitHub Actions displays:
-- Test count by type (Unit, Integration, E2E)
-- Pass/fail/skip statistics
+After each workflow run, the job summary displays a detailed table:
+
+| Type | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Duration |
+|------|-------|----------|----------|-----------|-----------|
+| 🏗️ Unit | 37 | 35 | 0 | 2 | 1.40s |
+| 📦 Integration | 21 | 20 | 0 | 1 | 8.00s |
+| 🎯 E2E | 10 | 10 | 0 | 0 | 26.00s |
+
+**What you see:**
+- Test count by type
+- Pass/fail/skip statistics  
 - Execution time per test type
-- Visual Test Pyramid
+- Success rate and total duration
 
-### Creating a Release
+### Artifacts & Downloads
+
+After each workflow run:
+- **Built `.xpi` file**: Ready to install in Firefox
+- **Test reports**: JSON and Markdown formats
+- **Artifacts retained** for 90 days on GitHub Actions
+
+### Creating Releases
+
+To release a new version:
 
 ```bash
-# Create and push a version tag
+# Tag the release (semantic versioning: v1.0.0)
 git tag v1.0.0
+
+# Push the tag
 git push origin v1.0.0
 ```
 
 This automatically:
-- ✅ Tests the code
-- ✅ Builds the `.xpi` file
-- ✅ Creates a GitHub Release
-- ✅ Makes it downloadable for users
+1. Runs full test suite
+2. Builds the Firefox extension
+3. Creates a GitHub Release page
+4. Uploads `.xpi` file for download
+5. Generates installation instructions
 
-For detailed guide, see [CICD_GUIDE.md](CICD_GUIDE.md)
+### Local Testing
+
+Before pushing, run tests locally:
+
+```bash
+# Unit tests only (fast feedback)
+npm run test:unit
+
+# Integration tests
+npm run test:integration
+
+# E2E tests (requires Playwright & Firefox)
+npm run test:e2e
+
+# All tests with detailed report
+npm run test:all
+
+# Watch mode (re-run on file changes)
+npm run test:watch
+```
+
+### Branch Protection (Optional)
+
+To enforce quality gates, enable branch protection in GitHub Settings:
+- Require status checks to pass
+- Require branches to be up to date before merge
+- Prevents any code merge without passing tests
 
 ## 🚀 Roadmap
 
