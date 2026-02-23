@@ -25,6 +25,25 @@ Perfect for automating repetitive tasks involving completing forms or tables on 
 
 (Installation and usage instructions will be added soon)
 
+## 🧪 Testing
+
+This project follows the **Test Pyramid** and **Shift Left** principles for automated testing:
+
+- **Unit Tests**: 70% - Fast, isolated function tests using Vitest
+- **Integration Tests**: 20% - Module interaction tests
+- **E2E Tests**: 10% - Complete user workflows with Playwright/Firefox
+
+**Run tests:**
+```bash
+npm run test:unit        # Fast feedback (recommended during development)
+npm run test:integration # Test module interactions
+npm run test:e2e         # Full browser tests
+npm run test:all         # Run all tests
+npm run test:coverage    # Generate coverage report
+```
+
+See [TESTING.md](TESTING.md) for detailed testing strategy and best practices.
+
 ## 📁 Project Structure
 
 (To be defined in upcoming iterations)
