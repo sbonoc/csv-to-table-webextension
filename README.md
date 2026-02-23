@@ -103,14 +103,12 @@ src/
 │   ├── storage.js          # browser.storage abstraction
 │   ├── message-bus.js      # Event system with middleware & priority
 │   ├── container.js        # Dependency Injection / IoC Container
-│   ├── index.js            # Barrel exports
-│   └── *.test.js           # Infrastructure tests
+│   └── index.js            # Barrel exports
 │
 ├── domain/                  # Business logic & entities
 │   ├── csv-parser.js       # CSV parsing and validation
 │   ├── mapping.js          # Column mapping configuration
-│   ├── table-handler.js    # HTML form field extraction & filling
-│   └── *.test.js           # Domain tests
+│   └── table-handler.js    # HTML form field extraction & filling
 │
 └── presentation/            # User interface & messaging layer
     ├── popup/              # Popup UI component
@@ -121,10 +119,15 @@ src/
     └── content-script.js   # Content script (webpage integration)
 
 tests/
-├── unit/                   # Unit tests for domain logic
+├── unit/                   # Unit tests segregated by module
 │   ├── csv-parser.test.js
 │   ├── mapping.test.js
-│   └── table-handler.test.js
+│   ├── table-handler.test.js
+│   └── infrastructure/
+│      ├── container.test.js
+│      ├── infrastructure.test.js
+│      ├── message-bus.test.js
+│      └── storage.test.js
 │
 ├── integration/            # Integration tests for workflows
 │   └── workflow.integration.test.js

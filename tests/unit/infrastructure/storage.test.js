@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StorageRepository } from './storage.js';
-import { Logger } from './logger.js';
-import { StorageError } from './errors.js';
-import { CONFIG } from './config.js';
+import { StorageRepository } from '../../../src/infrastructure/storage.js';
+import { Logger } from '../../../src/infrastructure/logger.js';
+import { StorageError } from '../../../src/infrastructure/errors.js';
+import { CONFIG } from '../../../src/infrastructure/config.js';
 
 describe('Infrastructure - StorageRepository', () => {
     let storage;

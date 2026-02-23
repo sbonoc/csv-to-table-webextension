@@ -5,10 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.js'],
-    reporters: ['default', 'json'],
-    outputFile: {
-      json: 'test-results/vitest.json'
-    },
+    reporters: ['default'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -25,7 +22,6 @@ export default defineConfig({
       statements: 80
     },
     include: [
-      'src/**/*.test.js',
       'tests/**/*.test.js',
       'tests/**/*.integration.test.js'
     ],

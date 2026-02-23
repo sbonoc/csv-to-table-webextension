@@ -6,6 +6,7 @@ const TEST_FIXTURES_DIR = path.join(__dirname, 'tests/e2e/fixtures');
 
 module.exports = defineConfig({
   testDir: './tests/e2e',
+  outputDir: 'playwright-results',
   fullyParallel: false,  // E2E tests must run serially due to extension state
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

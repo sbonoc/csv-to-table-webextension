@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Container } from './container.js';
-import { Logger } from './logger.js';
-import { StorageRepository } from './storage.js';
+import { Container } from '../../../src/infrastructure/container.js';
+import { Logger } from '../../../src/infrastructure/logger.js';
+import { StorageRepository } from '../../../src/infrastructure/storage.js';
 
 describe('Infrastructure - Container (Dependency Injection)', () => {
     let container;

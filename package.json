@@ -9,7 +9,7 @@
     "build": "web-ext build --overwrite-dist",
     "lint": "web-ext lint",
     "test": "vitest",
-    "test:unit": "vitest run --reporter=json --outputFile=test-results/unit.json src/**/*.test.js 2>&1 | tail -1",
+    "test:unit": "vitest run --reporter=json --outputFile=test-results/unit.json tests/unit 2>&1 | tail -1",
     "test:integration": "vitest run --reporter=json --outputFile=test-results/integration.json tests/integration 2>&1 | tail -1",
     "test:e2e": "playwright test 2>&1 | tail -1",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e && node scripts/generate-test-report.js",

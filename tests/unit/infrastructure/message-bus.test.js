@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { MessageBus } from './message-bus.js';
-import { Logger } from './logger.js';
-import { AppError } from './errors.js';
+import { MessageBus } from '../../../src/infrastructure/message-bus.js';
+import { Logger } from '../../../src/infrastructure/logger.js';
+import { AppError } from '../../../src/infrastructure/errors.js';
 
 describe('Infrastructure - MessageBus', () => {
     let messageBus;
