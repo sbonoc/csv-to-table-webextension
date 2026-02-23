@@ -457,13 +457,6 @@ npm run test:all
 npm run test:watch
 ```
 
-### Branch Protection (Optional)
-
-To enforce quality gates, enable branch protection in GitHub Settings:
-- Require status checks to pass
-- Require branches to be up to date before merge
-- Prevents any code merge without passing tests
-
 ## 🚀 Roadmap
 
 Current version: **1.0.0**
