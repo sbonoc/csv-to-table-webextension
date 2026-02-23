@@ -11,26 +11,40 @@ function parseVitestReport(filePath) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(content);
     
-    let passed = 0;
-    let failed = 0;
-    let skipped = 0;
+    let passed = data.numPassedTests || 0;
+    let failed = data.numFailedTests || 0;
+    let skipped = data.numPendingTests || data.numTodoTests || 0;
     let duration = 0;
 
     if (data.testResults && Array.isArray(data.testResults)) {
       data.testResults.forEach(result => {
-        passed += result.numPassingTests || 0;
-        failed += result.numFailingTests || 0;
-        skipped += result.numPendingTests || 0;
-        duration += result.perfStats?.duration || 0;
+        if (result.assertionResults && Array.isArray(result.assertionResults)) {
+          result.assertionResults.forEach(assertion => {
+            if (assertion.status === 'passed') {
+              // passed already counted
+            } else if (assertion.status === 'failed') {
+              // failed already counted
+            } else if (assertion.status === 'pending' || assertion.status === 'todo') {
+              // skipped already counted
+            }
+          });
+        }
+        if (result.duration) {
+          duration += result.duration;
+        } else if (result.endTime && result.startTime) {
+          duration += result.endTime - result.startTime;
+        }
       });
     }
+
+    const total = passed + failed + skipped;
 
     return {
       type: 'vitest',
       passed,
       failed,
       skipped,
-      total: passed + failed + skipped,
+      total,
       duration,
       success: failed === 0
     };
