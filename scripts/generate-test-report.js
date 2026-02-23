@@ -173,11 +173,12 @@ function generateTestPyramid(unit, integration, e2e) {
   const integrationPercent = total > 0 ? Math.round((integration.total / total) * 100) : 0;
   const e2ePercent = total > 0 ? Math.round((e2e.total / total) * 100) : 0;
 
-  const headers = ['Type', 'Level', '%', 'Total', '✅ Passed', '❌ Failed', '⏭️ Skipped', '⏱️ Duration (s)'];
+  // Compact table format
+  const headers = ['Type', 'Count', 'Pass', 'Fail', 'Skip', 'Duration (s)'];
   const rows = [
-    ['🏗️ Unit', '█████████████████████', `${unitPercent}%`, unit.total, unit.passed, unit.failed, unit.skipped, (unit.duration / 1000).toFixed(2)],
-    ['📦 Integration', '███████████', `${integrationPercent}%`, integration.total, integration.passed, integration.failed, integration.skipped, (integration.duration / 1000).toFixed(2)],
-    ['🎯 E2E', '██', `${e2ePercent}%`, e2e.total, e2e.passed, e2e.failed, e2e.skipped, (e2e.duration / 1000).toFixed(2)]
+    ['🏗️ Unit', unit.total, unit.passed, unit.failed, unit.skipped, (unit.duration / 1000).toFixed(2)],
+    ['📦 Integ', integration.total, integration.passed, integration.failed, integration.skipped, (integration.duration / 1000).toFixed(2)],
+    ['🎯 E2E', e2e.total, e2e.passed, e2e.failed, e2e.skipped, (e2e.duration / 1000).toFixed(2)]
   ];
 
   return createTable(headers, rows);
