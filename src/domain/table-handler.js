@@ -3,7 +3,7 @@
  * Handles HTML table detection and field extraction
  */
 
-import { Logger } from './infrastructure/logger.js';
+import { Logger } from '../infrastructure/logger.js';
 
 const logger = new Logger('TableHandler');
 

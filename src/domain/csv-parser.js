@@ -3,9 +3,9 @@
  * Handles CSV parsing and validation
  */
 
-import { Logger } from './infrastructure/logger.js';
-import { CONFIG } from './infrastructure/config.js';
-import { CSVError } from './infrastructure/errors.js';
+import { Logger } from '../infrastructure/logger.js';
+import { CONFIG } from '../infrastructure/config.js';
+import { CSVError } from '../infrastructure/errors.js';
 
 const logger = new Logger('CSVParser');
 

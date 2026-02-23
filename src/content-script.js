@@ -12,7 +12,7 @@ import {
 import {
     getTableFields,
     fillFields
-} from './table-handler.js';
+} from './domain/table-handler.js';
 
 // Initialize container
 const container = new Container();

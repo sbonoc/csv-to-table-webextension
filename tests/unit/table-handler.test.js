@@ -6,7 +6,7 @@ import {
   setFieldValue,
   getFieldValue,
   fillFields
-} from './table-handler.js';
+} from '../../src/domain/table-handler.js';
 
 describe('Table Handler - Unit Tests', () => {
   let container;

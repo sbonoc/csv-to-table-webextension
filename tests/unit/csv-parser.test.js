@@ -4,7 +4,7 @@ import {
   validateCSVData,
   rowToObject,
   getRowByIndex
-} from './csv-parser.js';
+} from '../../src/domain/csv-parser.js';
 
 describe('CSV Parser - Unit Tests', () => {
   describe('parseCSV', () => {

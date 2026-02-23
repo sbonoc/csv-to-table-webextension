@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseCSV, validateCSVData, getRowByIndex } from '../../src/csv-parser.js';
-import { createMapping, applyMappingToRow } from '../../src/mapping.js';
-import { fillFields, setFieldValue } from '../../src/table-handler.js';
+import { parseCSV, validateCSVData, getRowByIndex } from '../../src/domain/csv-parser.js';
+import { createMapping, applyMappingToRow } from '../../src/domain/mapping.js';
+import { fillFields, setFieldValue } from '../../src/domain/table-handler.js';
 
 /**
  * Integration Tests

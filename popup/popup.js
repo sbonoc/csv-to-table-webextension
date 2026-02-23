@@ -11,7 +11,7 @@ import {
 import {
     parseCSV,
     validateCSVData
-} from '../src/csv-parser.js';
+} from '../src/domain/csv-parser.js';
 
 // Initialize container and services
 const container = new Container();

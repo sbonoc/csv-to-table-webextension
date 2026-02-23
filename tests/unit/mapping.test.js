@@ -5,7 +5,7 @@ import {
   applyMappingToRow,
   validateMapping,
   getUnmappedColumns
-} from './mapping.js';
+} from '../../src/domain/mapping.js';
 
 describe('Mapping Module - Unit Tests', () => {
   const headers = ['Name', 'Email', 'Age', 'Department'];

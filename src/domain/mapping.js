@@ -3,8 +3,8 @@
  * Handles column mapping between CSV and table fields
  */
 
-import { Logger } from './infrastructure/logger.js';
-import { MappingError } from './infrastructure/errors.js';
+import { Logger } from '../infrastructure/logger.js';
+import { MappingError } from '../infrastructure/errors.js';
 
 const logger = new Logger('Mapping');
 
