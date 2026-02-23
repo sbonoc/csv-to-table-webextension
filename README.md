@@ -444,11 +444,11 @@ To release a new version:
 git checkout master
 git pull
 
-# Create the release tag (semantic versioning: v1.0.0)
-git tag v1.0.0
+# Create the release tag (semantic versioning: v1.1.0)
+git tag v1.1.0
 
 # Push the tag
-git push origin v1.0.0
+git push origin v1.1.0
 ```
 
 This automatically:
@@ -484,7 +484,7 @@ npm run test:watch
 
 ## 🚀 Roadmap
 
-Current version: **1.0.0**
+Current version: **1.1.0**
 
 ### Planned Features
 - [ ] Regular expression column matching

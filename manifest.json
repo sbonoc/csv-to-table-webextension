@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CSV to Table Filler",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatically fill HTML tables with CSV data using custom column mapping",
   "permissions": [
     "activeTab",
