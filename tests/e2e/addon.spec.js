@@ -2,277 +2,292 @@ import { test, expect } from './fixtures.js';
 
 /**
  * E2E Tests for CSV to Table Filler Extension
- * 
- * These tests verify the complete user workflows:
- * 1. Form accessibility and structure
- * 2. CSV data injection (what the extension does)
- * 3. Form filling and submission
- * 4. Batch processing of multiple CSV rows
- * 
- * Note: These tests simulate extension behavior without requiring the 
- * extension to be installed. In production, install via:
- * npm run build && web-ext run
+ *
+ * Fixture columns:
+ * - NRUA (alfanumérico)
+ * - Finalidad (alfanumérico)
+ * - Nº huéspedes (numérico)
+ * - Fecha de entrada (dd.mm.aaaa)
+ * - Fecha de salida (dd.mm.aaaa)
+ * - Sin actividad (checkbox)
  */
 
 test.describe('CSV to Table Filler - Form Accessibility', () => {
-  test('should load test form with all required fields', async ({ testContext }) => {
+  test('should load table form with all required fields', async ({ testContext }) => {
     const { page } = testContext;
-    
-    // Verify page title
+
     await expect(page).toHaveTitle(/CSV to Table Filler/);
-    
-    // Verify all form fields exist
-    await page.waitForSelector('#firstName', { timeout: 5000 });
-    await page.waitForSelector('#lastName', { timeout: 5000 });
-    await page.waitForSelector('#email', { timeout: 5000 });
-    await page.waitForSelector('#department', { timeout: 5000 });
-    
-    // Verify submit button
-    const submitBtn = await page.locator('#submitBtn');
+    await page.waitForSelector('#guestTable', { timeout: 5000 });
+
+    await page.waitForSelector('#nrua', { timeout: 5000 });
+    await page.waitForSelector('#finalidad', { timeout: 5000 });
+    await page.waitForSelector('#numHuespedes', { timeout: 5000 });
+    await page.waitForSelector('#fechaEntrada', { timeout: 5000 });
+    await page.waitForSelector('#fechaSalida', { timeout: 5000 });
+    await page.waitForSelector('#sinActividad', { timeout: 5000 });
+
+    const submitBtn = page.locator('#submitBtn');
     await expect(submitBtn).toBeVisible();
   });
 
-  test('should have correctly labeled form fields', async ({ testContext }) => {
+  test('should have correctly labeled table columns', async ({ testContext }) => {
     const { page } = testContext;
-    
-    // Labels should match field names
-    const firstNameLabel = page.locator('label[for="firstName"]');
-    await expect(firstNameLabel).toContainText('First Name');
-    
-    const lastNameLabel = page.locator('label[for="lastName"]');
-    await expect(lastNameLabel).toContainText('Last Name');
-    
-    const emailLabel = page.locator('label[for="email"]');
-    await expect(emailLabel).toContainText('Email');
-    
-    const departmentLabel = page.locator('label[for="department"]');
-    await expect(departmentLabel).toContainText('Department');
+
+    await expect(page.locator('label[for="nrua"]')).toContainText('NRUA');
+    await expect(page.locator('label[for="finalidad"]')).toContainText('Finalidad');
+    await expect(page.locator('label[for="numHuespedes"]')).toContainText('Nº huéspedes');
+    await expect(page.locator('label[for="fechaEntrada"]')).toContainText('Fecha de entrada (dd.mm.aaaa)');
+    await expect(page.locator('label[for="fechaSalida"]')).toContainText('Fecha de salida (dd.mm.aaaa)');
+    await expect(page.locator('label[for="sinActividad"]')).toContainText('Sin actividad');
   });
 
-  test('department dropdown should have all options', async ({ testContext }) => {
+  test('should have required input types and date format pattern', async ({ testContext }) => {
     const { page } = testContext;
-    
-    const deptSelect = page.locator('#department');
-    await deptSelect.click();
-    
-    // Verify all department options exist
-    const options = await page.locator('#department option');
-    const count = await options.count();
-    
-    // Default + 5 departments = 6 options
-    expect(count).toBe(6);
+
+    await expect(page.locator('#nrua')).toHaveAttribute('type', 'text');
+    await expect(page.locator('#finalidad')).toHaveAttribute('type', 'text');
+    await expect(page.locator('#numHuespedes')).toHaveAttribute('type', 'number');
+    await expect(page.locator('#fechaEntrada')).toHaveAttribute('pattern', '^\\d{2}\\.\\d{2}\\.\\d{4}$');
+    await expect(page.locator('#fechaSalida')).toHaveAttribute('pattern', '^\\d{2}\\.\\d{2}\\.\\d{4}$');
+    await expect(page.locator('#sinActividad')).toHaveAttribute('type', 'checkbox');
   });
 });
 
 test.describe('CSV to Table Filler - Data Injection & Filling', () => {
-  test('should fill form with single CSV row (Happy Path)', async ({ testContext }) => {
+  test('should fill table row with single CSV row (Happy Path)', async ({ testContext }) => {
     const { fillFormWithCSVData, assertFieldValue, getFormData } = testContext;
-    
-    // Simulate CSV row from: FirstName,LastName,Email,Department
+
     const csvRow = {
-      'FirstName': 'John',
-      'LastName': 'Doe',
-      'Email': 'john@example.com',
-      'Department': 'Engineering'
+      'NRUA': 'ABC123X',
+      'Finalidad': 'Turismo',
+      'Nº huéspedes': '3',
+      'Fecha de entrada (dd.mm.aaaa)': '21.02.2026',
+      'Fecha de salida (dd.mm.aaaa)': '24.02.2026',
+      'Sin actividad': true
     };
-    
+
     await fillFormWithCSVData(csvRow);
-    
-    // Verify all fields were filled
-    expect(await assertFieldValue('firstName', 'John')).toBe(true);
-    expect(await assertFieldValue('lastName', 'Doe')).toBe(true);
-    expect(await assertFieldValue('email', 'john@example.com')).toBe(true);
-    
-    // Verify dropdown
+
+    expect(await assertFieldValue('nrua', 'ABC123X')).toBe(true);
+    expect(await assertFieldValue('finalidad', 'Turismo')).toBe(true);
+    expect(await assertFieldValue('numHuespedes', '3')).toBe(true);
+    expect(await assertFieldValue('fechaEntrada', '21.02.2026')).toBe(true);
+    expect(await assertFieldValue('fechaSalida', '24.02.2026')).toBe(true);
+    expect(await assertFieldValue('sinActividad', true)).toBe(true);
+
     const formData = await getFormData();
-    expect(formData.department).toBe('Engineering');
+    expect(formData.sinActividad).toBe(true);
   });
 
-  test('should fill form with different CSV data', async ({ testContext }) => {
+  test('should fill table row with different CSV data', async ({ testContext }) => {
     const { fillFormWithCSVData, getFormData, resetForm } = testContext;
-    
+
     const csvRow = {
-      'FirstName': 'Jane',
-      'LastName': 'Smith',
-      'Email': 'jane@example.com',
-      'Department': 'Sales'
+      'NRUA': 'ZX9K2',
+      'Finalidad': 'Trabajo',
+      'Nº huéspedes': '1',
+      'Fecha de entrada (dd.mm.aaaa)': '01.03.2026',
+      'Fecha de salida (dd.mm.aaaa)': '05.03.2026',
+      'Sin actividad': false
     };
-    
+
     await fillFormWithCSVData(csvRow);
-    
+
     const formData = await getFormData();
-    expect(formData.firstName).toBe('Jane');
-    expect(formData.lastName).toBe('Smith');
-    expect(formData.email).toBe('jane@example.com');
-    expect(formData.department).toBe('Sales');
-    
-    // Cleanup
+    expect(formData.nrua).toBe('ZX9K2');
+    expect(formData.finalidad).toBe('Trabajo');
+    expect(formData.numHuespedes).toBe('1');
+    expect(formData.fechaEntrada).toBe('01.03.2026');
+    expect(formData.fechaSalida).toBe('05.03.2026');
+    expect(formData.sinActividad).toBe(false);
+
     await resetForm();
   });
 
-  test('should handle special characters in CSV data', async ({ testContext }) => {
+  test('should handle alphanumeric and unicode values', async ({ testContext }) => {
     const { fillFormWithCSVData, assertFieldValue } = testContext;
-    
+
     const csvRow = {
-      'FirstName': "O'Brien",
-      'LastName': 'Müller',
-      'Email': 'test+alias@example.com',
-      'Department': 'Engineering'
+      'NRUA': 'ÑX-99A7',
+      'Finalidad': 'Vacación familiar',
+      'Nº huéspedes': '5',
+      'Fecha de entrada (dd.mm.aaaa)': '10.04.2026',
+      'Fecha de salida (dd.mm.aaaa)': '20.04.2026',
+      'Sin actividad': 'sí'
     };
-    
+
     await fillFormWithCSVData(csvRow);
-    
-    expect(await assertFieldValue('firstName', "O'Brien")).toBe(true);
-    expect(await assertFieldValue('lastName', 'Müller')).toBe(true);
-    expect(await assertFieldValue('email', 'test+alias@example.com')).toBe(true);
+
+    expect(await assertFieldValue('nrua', 'ÑX-99A7')).toBe(true);
+    expect(await assertFieldValue('finalidad', 'Vacación familiar')).toBe(true);
+    expect(await assertFieldValue('numHuespedes', '5')).toBe(true);
+    expect(await assertFieldValue('sinActividad', true)).toBe(true);
   });
 });
 
 test.describe('CSV to Table Filler - Form Submission', () => {
   test('should submit form with filled data', async ({ testContext }) => {
     const { fillFormWithCSVData, submitAndVerifySuccess } = testContext;
-    
+
     const csvRow = {
-      'FirstName': 'John',
-      'LastName': 'Doe',
-      'Email': 'john@example.com',
-      'Department': 'Engineering'
+      'NRUA': 'SUBM123',
+      'Finalidad': 'Evento',
+      'Nº huéspedes': '2',
+      'Fecha de entrada (dd.mm.aaaa)': '11.05.2026',
+      'Fecha de salida (dd.mm.aaaa)': '13.05.2026',
+      'Sin actividad': false
     };
-    
+
     await fillFormWithCSVData(csvRow);
     const submitted = await submitAndVerifySuccess();
-    
+
     expect(submitted).toBe(true);
   });
 
   test('should show success message after submission', async ({ testContext }) => {
     const { fillFormWithCSVData, page } = testContext;
-    
+
     const csvRow = {
-      'FirstName': 'Bob',
-      'LastName': 'Johnson',
-      'Email': 'bob@example.com',
-      'Department': 'Marketing'
+      'NRUA': 'OK2026',
+      'Finalidad': 'Turismo',
+      'Nº huéspedes': '4',
+      'Fecha de entrada (dd.mm.aaaa)': '15.06.2026',
+      'Fecha de salida (dd.mm.aaaa)': '19.06.2026',
+      'Sin actividad': true
     };
-    
+
     await fillFormWithCSVData(csvRow);
-    
-    const submitBtn = await page.locator('#submitBtn');
+
+    const submitBtn = page.locator('#submitBtn');
     await submitBtn.click();
-    
-    const successMessage = await page.locator('#successMessage');
+
+    const successMessage = page.locator('#successMessage');
     await expect(successMessage).toHaveClass(/show/);
-    await expect(successMessage).toContainText('successfully');
+    await expect(successMessage).toContainText('correctamente');
   });
 
   test('should reset form after submission', async ({ testContext }) => {
     const { fillFormWithCSVData, getFormData, resetForm } = testContext;
-    
+
     const csvRow = {
-      'FirstName': 'Test',
-      'LastName': 'User',
-      'Email': 'test@example.com',
-      'Department': 'Finance'
+      'NRUA': 'RST999',
+      'Finalidad': 'Negocios',
+      'Nº huéspedes': '6',
+      'Fecha de entrada (dd.mm.aaaa)': '01.07.2026',
+      'Fecha de salida (dd.mm.aaaa)': '07.07.2026',
+      'Sin actividad': true
     };
-    
+
     await fillFormWithCSVData(csvRow);
     await resetForm();
-    
+
     const formData = await getFormData();
-    expect(formData.firstName).toBe('');
-    expect(formData.lastName).toBe('');
-    expect(formData.email).toBe('');
-    expect(formData.department).toBe('');
+    expect(formData.nrua).toBe('');
+    expect(formData.finalidad).toBe('');
+    expect(formData.numHuespedes).toBe('');
+    expect(formData.fechaEntrada).toBe('');
+    expect(formData.fechaSalida).toBe('');
+    expect(formData.sinActividad).toBe(false);
   });
 });
 
 test.describe('CSV to Table Filler - Batch Processing', () => {
   test('should process multiple CSV rows sequentially', async ({ testContext }) => {
     const { fillFormWithCSVData, submitAndVerifySuccess, resetForm, getFormData } = testContext;
-    
-    // Sample CSV data (3 rows)
+
     const csvRows = [
       {
-        'FirstName': 'John',
-        'LastName': 'Doe',
-        'Email': 'john@example.com',
-        'Department': 'Engineering'
+        'NRUA': 'SEQ001',
+        'Finalidad': 'Turismo',
+        'Nº huéspedes': '2',
+        'Fecha de entrada (dd.mm.aaaa)': '01.08.2026',
+        'Fecha de salida (dd.mm.aaaa)': '03.08.2026',
+        'Sin actividad': false
       },
       {
-        'FirstName': 'Jane',
-        'LastName': 'Smith',
-        'Email': 'jane@example.com',
-        'Department': 'Sales'
+        'NRUA': 'SEQ002',
+        'Finalidad': 'Negocios',
+        'Nº huéspedes': '1',
+        'Fecha de entrada (dd.mm.aaaa)': '05.08.2026',
+        'Fecha de salida (dd.mm.aaaa)': '06.08.2026',
+        'Sin actividad': true
       },
       {
-        'FirstName': 'Bob',
-        'LastName': 'Johnson',
-        'Email': 'bob@example.com',
-        'Department': 'Marketing'
+        'NRUA': 'SEQ003',
+        'Finalidad': 'Evento',
+        'Nº huéspedes': '5',
+        'Fecha de entrada (dd.mm.aaaa)': '10.08.2026',
+        'Fecha de salida (dd.mm.aaaa)': '12.08.2026',
+        'Sin actividad': false
       }
     ];
-    
-    // Process each row
+
     for (const row of csvRows) {
       await fillFormWithCSVData(row);
-      
-      // Verify data is filled
+
       const formData = await getFormData();
-      expect(formData.firstName).toBe(row.FirstName);
-      expect(formData.lastName).toBe(row.LastName);
-      expect(formData.email).toBe(row.Email);
-      expect(formData.department).toBe(row.Department);
-      
-      // Submit
+      expect(formData.nrua).toBe(row.NRUA);
+      expect(formData.finalidad).toBe(row.Finalidad);
+      expect(formData.numHuespedes).toBe(row['Nº huéspedes']);
+      expect(formData.fechaEntrada).toBe(row['Fecha de entrada (dd.mm.aaaa)']);
+      expect(formData.fechaSalida).toBe(row['Fecha de salida (dd.mm.aaaa)']);
+
       await submitAndVerifySuccess();
-      
-      // Reset for next row
       await resetForm();
     }
   });
 
-  test('should handle mixed data in batch processing', async ({ testContext }) => {
+  test('should handle mixed checkbox states in batch processing', async ({ testContext }) => {
     const { fillFormWithCSVData, submitAndVerifySuccess, resetForm, getFormData } = testContext;
-    
-    // Different departments in one batch
+
     const csvRows = [
       {
-        'FirstName': 'Alice',
-        'LastName': 'Williams',
-        'Email': 'alice@example.com',
-        'Department': 'Engineering'
+        'NRUA': 'CHK001',
+        'Finalidad': 'Turismo',
+        'Nº huéspedes': '2',
+        'Fecha de entrada (dd.mm.aaaa)': '14.09.2026',
+        'Fecha de salida (dd.mm.aaaa)': '15.09.2026',
+        'Sin actividad': true
       },
       {
-        'FirstName': 'Charlie',
-        'LastName': 'Brown',
-        'Email': 'charlie@example.com',
-        'Department': 'HR'
+        'NRUA': 'CHK002',
+        'Finalidad': 'Trabajo',
+        'Nº huéspedes': '3',
+        'Fecha de entrada (dd.mm.aaaa)': '20.09.2026',
+        'Fecha de salida (dd.mm.aaaa)': '22.09.2026',
+        'Sin actividad': false
       },
       {
-        'FirstName': 'Diana',
-        'LastName': 'Prince',
-        'Email': 'diana@example.com',
-        'Department': 'Finance'
+        'NRUA': 'CHK003',
+        'Finalidad': 'Evento',
+        'Nº huéspedes': '1',
+        'Fecha de entrada (dd.mm.aaaa)': '25.09.2026',
+        'Fecha de salida (dd.mm.aaaa)': '26.09.2026',
+        'Sin actividad': true
       }
     ];
-    
+
     let processedCount = 0;
     for (const row of csvRows) {
       await fillFormWithCSVData(row);
-      
+
       const formData = await getFormData();
-      expect(Object.values(formData).every(v => v)).toBe(true); // All fields filled
-      
+      expect(formData.nrua).toBeTruthy();
+      expect(formData.finalidad).toBeTruthy();
+      expect(formData.numHuespedes).toBeTruthy();
+      expect(formData.fechaEntrada).toBeTruthy();
+      expect(formData.fechaSalida).toBeTruthy();
+      expect(formData.sinActividad).toBe(Boolean(row['Sin actividad']));
+
       processedCount++;
-      
-      // For last row, submit
+
       if (processedCount === csvRows.length) {
         await submitAndVerifySuccess();
       } else {
         await resetForm();
       }
     }
-    
+
     expect(processedCount).toBe(3);
   });
 });
@@ -280,81 +295,81 @@ test.describe('CSV to Table Filler - Batch Processing', () => {
 test.describe('CSV to Table Filler - Error Handling', () => {
   test('should not accept empty form submission (validation)', async ({ testContext }) => {
     const { page } = testContext;
-    
-    // Try to submit without filling
-    const form = await page.locator('form#employeeForm');
-    
-    // HTML5 validation should prevent submission
+
+    const form = page.locator('form#guestForm');
     const isValid = await form.evaluate((f) => f.checkValidity());
     expect(isValid).toBe(false);
   });
 
   test('should clear previous data when resetting form', async ({ testContext }) => {
     const { fillFormWithCSVData, resetForm, getFormData } = testContext;
-    
-    // Fill form
+
     await fillFormWithCSVData({
-      'FirstName': 'Test',
-      'LastName': 'Data',
-      'Email': 'test@example.com',
-      'Department': 'Sales'
+      'NRUA': 'CLR777',
+      'Finalidad': 'Prueba',
+      'Nº huéspedes': '7',
+      'Fecha de entrada (dd.mm.aaaa)': '01.10.2026',
+      'Fecha de salida (dd.mm.aaaa)': '10.10.2026',
+      'Sin actividad': true
     });
-    
-    // Reset
+
     await resetForm();
-    
-    // Verify all cleared
+
     const formData = await getFormData();
-    Object.values(formData).forEach(value => {
-      expect(value).toBe('');
-    });
+    expect(formData.nrua).toBe('');
+    expect(formData.finalidad).toBe('');
+    expect(formData.numHuespedes).toBe('');
+    expect(formData.fechaEntrada).toBe('');
+    expect(formData.fechaSalida).toBe('');
+    expect(formData.sinActividad).toBe(false);
   });
 
   test('should handle partial CSV rows gracefully', async ({ testContext }) => {
     const { fillFormWithCSVData, getFormData } = testContext;
-    
-    // Partial data (missing Department)
+
     const partialRow = {
-      'FirstName': 'Partial',
-      'LastName': 'User',
-      'Email': 'partial@example.com'
-      // Department intentionally omitted
+      'NRUA': 'PART01',
+      'Finalidad': 'Parcial',
+      'Nº huéspedes': '2'
     };
-    
+
     await fillFormWithCSVData(partialRow);
-    
+
     const formData = await getFormData();
-    expect(formData.firstName).toBe('Partial');
-    expect(formData.lastName).toBe('User');
-    expect(formData.email).toBe('partial@example.com');
-    // Department remains empty (as expected)
-    expect(formData.department).toBe('');
+    expect(formData.nrua).toBe('PART01');
+    expect(formData.finalidad).toBe('Parcial');
+    expect(formData.numHuespedes).toBe('2');
+    expect(formData.fechaEntrada).toBe('');
+    expect(formData.fechaSalida).toBe('');
+    expect(formData.sinActividad).toBe(false);
   });
 });
 
 test.describe('CSV to Table Filler - Performance & Limits', () => {
   test('should handle 100 rows in reasonable time', async ({ testContext }) => {
-    const { fillFormWithCSVData, resetForm, getFormData } = testContext;
-    
+    const { fillFormWithCSVData, resetForm } = testContext;
+
     const startTime = Date.now();
     const rowCount = 100;
-    
+
     for (let i = 0; i < rowCount; i++) {
+      const dayIn = String((i % 28) + 1).padStart(2, '0');
+      const dayOut = String(((i + 1) % 28) + 1).padStart(2, '0');
+
       const row = {
-        'FirstName': `User${i}`,
-        'LastName': `Test${i}`,
-        'Email': `user${i}@example.com`,
-        'Department': ['Engineering', 'Sales', 'Marketing'][i % 3]
+        'NRUA': `NRUA${i}`,
+        'Finalidad': ['Turismo', 'Trabajo', 'Evento'][i % 3],
+        'Nº huéspedes': String((i % 8) + 1),
+        'Fecha de entrada (dd.mm.aaaa)': `${dayIn}.11.2026`,
+        'Fecha de salida (dd.mm.aaaa)': `${dayOut}.11.2026`,
+        'Sin actividad': i % 2 === 0
       };
-      
+
       await fillFormWithCSVData(row);
       await resetForm();
     }
-    
+
     const duration = Date.now() - startTime;
-    
-    // Should complete within reasonable time (adjust threshold as needed)
-    expect(duration).toBeLessThan(120000); // 2 minutes for 100 rows
+    expect(duration).toBeLessThan(120000);
   });
 });
-

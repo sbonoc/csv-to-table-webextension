@@ -18,7 +18,7 @@ export const test = base.extend({
     await page.goto('/test-form.html');
     
     // Wait for the form to be ready
-    await page.waitForSelector('form#employeeForm', { timeout: 5000 });
+    await page.waitForSelector('form#guestForm', { timeout: 5000 });
     
     // Create utility functions
     const testContext = {
@@ -30,8 +30,17 @@ export const test = base.extend({
       fillField: async (fieldId, value) => {
         const field = await page.locator(`#${fieldId}`);
         await field.clear();
-        await field.fill(value);
+        await field.fill(String(value));
         await field.blur();  // Trigger change event
+      },
+
+      /**
+       * Set checkbox checked state
+       */
+      setCheckbox: async (fieldId, checked) => {
+        const checkbox = await page.locator(`#${fieldId}`);
+        await checkbox.setChecked(Boolean(checked));
+        await checkbox.blur();
       },
       
       /**
@@ -61,20 +70,23 @@ export const test = base.extend({
        * Simulate the extension filling multiple rows from CSV
        */
       fillFormWithCSVData: async (csvRow) => {
-        // CSS to Table Filler maps: FirstName->firstName, LastName->lastName, Email->email, Department->department
+        // CSV to Table Filler mapping for test table fixture
         const fieldMapping = {
-          'FirstName': 'firstName',
-          'LastName': 'lastName',
-          'Email': 'email',
-          'Department': 'department'
+          'NRUA': 'nrua',
+          'Finalidad': 'finalidad',
+          'Nº huéspedes': 'numHuespedes',
+          'Fecha de entrada (dd.mm.aaaa)': 'fechaEntrada',
+          'Fecha de salida (dd.mm.aaaa)': 'fechaSalida',
+          'Sin actividad': 'sinActividad'
         };
         
         for (const [csvHeader, value] of Object.entries(csvRow)) {
           const fieldId = fieldMapping[csvHeader];
           if (!fieldId) continue;
           
-          if (fieldId === 'department') {
-            await testContext.selectOption(fieldId, value);
+          if (fieldId === 'sinActividad') {
+            const isChecked = value === true || value === 'true' || value === '1' || value === 'sí' || value === 'si';
+            await testContext.setCheckbox(fieldId, isChecked);
           } else {
             await testContext.fillField(fieldId, value);
           }
@@ -100,8 +112,14 @@ export const test = base.extend({
        */
       assertFieldValue: async (fieldId, expectedValue) => {
         const field = await page.locator(`#${fieldId}`);
+
+        if (fieldId === 'sinActividad') {
+          const actualChecked = await field.isChecked();
+          return actualChecked === Boolean(expectedValue);
+        }
+
         const actualValue = await field.inputValue();
-        return actualValue === expectedValue;
+        return actualValue === String(expectedValue);
       }
     };
     
