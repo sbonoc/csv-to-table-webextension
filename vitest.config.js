@@ -5,9 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.js'],
-    reporters: ['default', 'json', 'verbose'],
+    reporters: ['default', 'json'],
     outputFile: {
-      json: 'test-results/unit.json'
+      json: 'test-results/vitest.json'
     },
     coverage: {
       provider: 'v8',

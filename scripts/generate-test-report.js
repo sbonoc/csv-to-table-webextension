@@ -252,13 +252,31 @@ function main() {
     fs.mkdirSync(resultsDir, { recursive: true });
   }
 
+  // Try to find vitest report (created by vitest when used with -reporter=json)
+  const vitestJsonPath = path.join(resultsDir, 'vitest.json');
   const unitPath = path.join(resultsDir, 'unit.json');
   const integrationPath = path.join(resultsDir, 'integration.json');
   const e2ePath = path.join(resultsDir, 'e2e-results.json');
 
   // Parse reports
-  const unitReport = fs.existsSync(unitPath) ? parseVitestReport(unitPath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
-  const integrationReport = fs.existsSync(integrationPath) ? parseVitestReport(integrationPath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
+  let unitReport = { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
+  let integrationReport = { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
+  
+  // Check if vitest.json exists (contains both unit and integration tests)
+  if (fs.existsSync(vitestJsonPath)) {
+    const vitestData = parseVitestReport(vitestJsonPath);
+    // For now, attribute all vitest tests to unit since we can't distinguish
+    unitReport = vitestData;
+  } else {
+    // Fall back to individual files
+    if (fs.existsSync(unitPath)) {
+      unitReport = parseVitestReport(unitPath);
+    }
+    if (fs.existsSync(integrationPath)) {
+      integrationReport = parseVitestReport(integrationPath);
+    }
+  }
+  
   const e2eReport = fs.existsSync(e2ePath) ? parsePlaywrightReport(e2ePath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };
 
   // Generate summary
