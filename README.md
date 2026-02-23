@@ -5,11 +5,13 @@ A Firefox extension that automates filling HTML tables and forms using CSV files
 ## 📋 Features
 
 - **CSV Import**: Load CSV files directly from the browser
-- **Smart Column Mapping**: Map CSV columns to HTML form fields with an intuitive UI
-- **Auto-Fill**: Automatically populate tables and forms with CSV data
+- **Smart Column Mapping**: Map CSV columns to detected target fields from the first editable row
+- **Row-by-Row Fill**: Populate target table rows top-to-bottom using all CSV rows
 - **Persistent Configs**: Save and reuse mapping configurations
-- **Batch Processing**: Fill multiple rows sequentially
-- **Error Handling**: Clear error messages and validation
+- **Date Transform Options**: Auto or explicit output format (`dd.mm.yyyy`, `dd/mm/yyyy`, `yyyy-mm-dd`)
+- **Target Highlighting**: Highlight selected destination table and mapped fields on the page
+- **Responsive Sidebar UI**: Adaptive layout for narrow and wide sidebar widths
+- **Error/Warning Handling**: Clear status messages for success, warning, and error outcomes
 
 ## 📦 Installation
 
@@ -41,9 +43,10 @@ npm run build
 1. **Open a webpage** with tables or forms you want to fill
 2. **Click the extension icon** in Firefox toolbar
 3. **Upload a CSV file** from your computer
-4. **Configure mapping**: Drag CSV columns to form fields
-5. **Click "Fill"**: The extension matches CSV data to form fields
-6. **Save mapping** for future use on the same website
+4. **Configure mapping**: Select the destination field for each CSV column
+5. **Select date transform mode** (optional)
+6. **Click "Fill Table"**: The extension fills rows top-to-bottom
+7. **Save mapping** for future reuse
 
 ### Example CSV Format
 ```csv
@@ -60,7 +63,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 ```
 ┌───────────────────────────────────────────┐
 │  PRESENTATION LAYER (User Interface)      │
-│  • Popup UI (src/presentation/popup/)    │
+│  • Sidebar UI (src/presentation/sidebar/)│
 │  • Background script (messaging hub)     │
 │  • Content script (page integration)     │
 └──────────────────┬──────────────────────┘
@@ -90,7 +93,7 @@ The project follows **Clean Architecture** with 3 implemented layers:
 - **Error Handling**: Typed errors (CSVError, MappingError, etc)
 - **Logging**: Structured context-aware logging
 - **Repository Pattern**: StorageRepository abstracts browser.storage
-- **Test Pyramid (latest run)**: 82% unit, 8% integration, 10% E2E
+- **Test Pyramid (latest run)**: 84% unit, 7% integration, 9% E2E
 
 ## 📂 Project Structure
 
@@ -111,12 +114,13 @@ src/
 │   └── table-handler.js    # HTML form field extraction & filling
 │
 └── presentation/            # User interface & messaging layer
-    ├── popup/              # Popup UI component
-    │   ├── popup.html      # Popup UI markup
-    │   ├── popup.css       # Popup styling
-    │   └── popup.js        # Popup logic with service integration
-    ├── background.js       # Background script (persistence & messaging)
-    └── content-script.js   # Content script (webpage integration)
+    ├── i18n.js              # Lightweight translation dictionaries/helpers
+    ├── sidebar/            # Sidebar UI component
+    │   ├── sidebar.html    # Sidebar UI markup
+    │   ├── sidebar.css     # Sidebar styling
+    │   └── sidebar.js      # Sidebar logic with service integration
+    ├── background.bootstrap.js    # Background script entrypoint
+    └── content-script.bootstrap.js # Content script entrypoint
 
 tests/
 ├── unit/                   # Unit tests segregated by module
@@ -154,11 +158,11 @@ package.json               # Dependencies and scripts
 
 The project uses a **Test Pyramid** approach with clear separation:
 
-- **Unit Tests** (82%): Tests in `tests/unit/` covering individual functions with fast feedback
-- **Integration Tests** (8%): Tests in `tests/integration/` covering module interactions and workflows  
-- **E2E Tests** (10%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
+- **Unit Tests** (84%): Tests in `tests/unit/` covering individual functions with fast feedback
+- **Integration Tests** (7%): Tests in `tests/integration/` covering module interactions and workflows  
+- **E2E Tests** (9%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
 
-**Current Test Inventory:** 151 automated tests (124 unit, 12 integration, 15 E2E)
+**Current Test Inventory:** 167 automated tests (140 unit, 12 integration, 15 E2E)
 
 ### Run Tests
 
@@ -239,13 +243,13 @@ StorageRepository.saveMappingConfig() → save mapping
     ↓
 User clicks "Fill Table" button
     ↓
-MessageBus.emit('fillTable') → send to content script
+browser.tabs.sendMessage('fillTable') → send mapped rows to content script
     ↓
-getTableFields() → extract form fields from DOM
+getTableFields() → detect target fields from first editable row
     ↓
-fillFields() → write CSV values to form fields
+fillRowsByMapping() → fill table rows top-to-bottom
     ↓
-browser.tabs.sendMessage() → report success to popup
+content script returns success/warning/error status
     ↓
 Form updated, user sees success message
 ```
@@ -264,15 +268,15 @@ The extension uses domain functions instead of service classes:
 
 ### Message Flow Architecture
 
-The extension communicates via an event-driven architecture:
+The extension communicates via WebExtensions messaging:
 
-1. **Popup Layer**: User uploads CSV and configures mapping
-2. **Background Layer**: Receives fill request via `MessageBus.emit()`
-3. **Content Layer**: Receives message via `browser.tabs.sendMessage()`
-4. **DOM Update**: `fillFields()` updates form elements
-5. **Response**: Content script sends back success/error to popup
+1. **Sidebar Layer**: User uploads CSV, configures mapping, chooses table/date options
+2. **Sidebar → Content**: `browser.tabs.sendMessage()` for `getTableInfo`, `highlightTargetTable`, and `fillTable`
+3. **Content Layer**: Validates request, resolves target table/row mapping, updates DOM
+4. **Response**: Content script returns `success|warning|error` with message and counts
+5. **Sidebar Feedback**: UI shows status and keeps mapping/table highlight in sync
 
-All messages are validated through typed error handling and logged for debugging.
+Messages are validated and sanitized; unauthorized senders/actions are rejected.
 
 ## 🔐 Security & Privacy
 
@@ -356,9 +360,9 @@ The project includes **automated GitHub Actions** that:
 ### Automatic Testing & Building
 - Runs on every push to `main` and `develop` branches
 - Tests on multiple Node.js versions (18.x, 20.x)
-- **Unit tests** (82%): 124 tests for individual functions
-- **Integration tests** (8%): 12 tests for module interactions  
-- **E2E tests** (10%): 15 tests for complete user workflows in real Firefox browser
+- **Unit tests** (84%): 140 tests for individual functions
+- **Integration tests** (7%): 12 tests for module interactions  
+- **E2E tests** (9%): 15 tests for complete user workflows in real Firefox browser
 
 ### Test Report with Test Pyramid
 
@@ -366,9 +370,9 @@ After each workflow run, the job summary displays a detailed table:
 
 | Type | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Duration |
 |------|-------|----------|----------|-----------|-----------|
-| 🏗️ Unit | 116 | 116 | 0 | 0 | ~0.07s |
+| 🏗️ Unit | 140 | 140 | 0 | 0 | ~0.13s |
 | 📦 Integration | 12 | 12 | 0 | 0 | ~0.01s |
-| 🎯 E2E | 15 | 15 | 0 | 0 | ~10.00s |
+| 🎯 E2E | 15 | 15 | 0 | 0 | ~12.50s |
 - Pass/fail/skip statistics  
 - Execution time per test type
 - Success rate and total duration
@@ -432,12 +436,11 @@ To enforce quality gates, enable branch protection in GitHub Settings:
 Current version: **1.0.0**
 
 ### Planned Features
-- [ ] Support for multiple CSV rows per form
 - [ ] Regular expression column matching
 - [ ] Import mapping configurations from file
 - [ ] Batch processing with progress bar
-- [ ] Support for more field types (date, checkbox, radio)
-- [ ] Localization (i18n support)
+- [ ] Persist sidebar UI preferences (date format, selected table)
+- [ ] Optional language selector in UI
 
 ## 🐛 Known Issues
 
@@ -462,7 +465,7 @@ Please include:
 
 - **Lines of Code**: ~2,000 (core logic)
 - **Test Coverage**: 80%+ 
-- **Testing**: 151 automated tests (124 unit + 12 integration + 15 E2E)
+- **Testing**: 167 automated tests (140 unit + 12 integration + 15 E2E)
 - **Documentation**: Comprehensive inline comments
 - **Performance**: < 500ms for typical operations
 

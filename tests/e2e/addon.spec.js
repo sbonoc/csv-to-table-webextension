@@ -34,11 +34,11 @@ test.describe('CSV to Table Filler - Form Accessibility', () => {
     const { page } = testContext;
 
     await expect(page.locator('label[for="nrua"]')).toContainText('NRUA');
-    await expect(page.locator('label[for="finalidad"]')).toContainText('Finalidad');
-    await expect(page.locator('label[for="numHuespedes"]')).toContainText('Nº huéspedes');
-    await expect(page.locator('label[for="fechaEntrada"]')).toContainText('Fecha de entrada (dd.mm.aaaa)');
-    await expect(page.locator('label[for="fechaSalida"]')).toContainText('Fecha de salida (dd.mm.aaaa)');
-    await expect(page.locator('label[for="sinActividad"]')).toContainText('Sin actividad');
+    await expect(page.locator('label[for="finalidad"]')).toContainText('Purpose');
+    await expect(page.locator('label[for="numHuespedes"]')).toContainText('Guests count');
+    await expect(page.locator('label[for="fechaEntrada"]')).toContainText('Check-in date (dd.mm.yyyy)');
+    await expect(page.locator('label[for="fechaSalida"]')).toContainText('Check-out date (dd.mm.yyyy)');
+    await expect(page.locator('label[for="sinActividad"]')).toContainText('No activity');
   });
 
   test('should have required input types and date format pattern', async ({ testContext }) => {
@@ -163,7 +163,7 @@ test.describe('CSV to Table Filler - Form Submission', () => {
 
     const successMessage = page.locator('#successMessage');
     await expect(successMessage).toHaveClass(/show/);
-    await expect(successMessage).toContainText('correctamente');
+    await expect(successMessage).toContainText('submitted successfully');
   });
 
   test('should reset form after submission', async ({ testContext }) => {

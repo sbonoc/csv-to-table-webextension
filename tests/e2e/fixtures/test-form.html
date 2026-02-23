@@ -103,43 +103,44 @@
 </head>
 <body>
   <div class="container">
-    <h1>Formulario de Huéspedes</h1>
-    <p>Fixture E2E para CSV to Table Filler con columnas de registro de hospedaje.</p>
+    <h1>Guest Registration Form</h1>
+    <p>E2E fixture for CSV to Table Filler with guest registration columns.</p>
+    <p><strong id="rowCount">Rows: 1</strong></p>
 
     <form id="guestForm">
-      <table aria-label="Tabla de registro de huéspedes" id="guestTable">
+      <table aria-label="Guest registration table" id="guestTable">
         <thead>
           <tr>
             <th>
               <label for="nrua">NRUA</label>
             </th>
             <th>
-              <label for="finalidad">Finalidad</label>
+              <label for="finalidad">Purpose</label>
             </th>
             <th>
-              <label for="numHuespedes">Nº huéspedes</label>
+              <label for="numHuespedes">Guests count</label>
             </th>
             <th>
-              <label for="fechaEntrada">Fecha de entrada (dd.mm.aaaa)</label>
+              <label for="fechaEntrada">Check-in date (dd.mm.yyyy)</label>
             </th>
             <th>
-              <label for="fechaSalida">Fecha de salida (dd.mm.aaaa)</label>
+              <label for="fechaSalida">Check-out date (dd.mm.yyyy)</label>
             </th>
             <th>
-              <label for="sinActividad">Sin actividad</label>
+              <label for="sinActividad">No activity</label>
             </th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>
-              <input id="nrua" name="nrua" type="text" required placeholder="Ej: ABC123" />
+              <input id="nrua" name="nrua" type="text" required placeholder="Ex: ABC123" />
             </td>
             <td>
-              <input id="finalidad" name="finalidad" type="text" required placeholder="Ej: Turismo" />
+              <input id="finalidad" name="finalidad" type="text" required placeholder="Ex: Tourism" />
             </td>
             <td>
-              <input id="numHuespedes" name="numHuespedes" type="number" min="0" step="1" required placeholder="Ej: 2" />
+              <input id="numHuespedes" name="numHuespedes" type="number" min="0" step="1" required placeholder="Ex: 2" />
             </td>
             <td>
               <input id="fechaEntrada" name="fechaEntrada" type="text" required pattern="^\d{2}\.\d{2}\.\d{4}$" placeholder="dd.mm.aaaa" />
@@ -157,12 +158,44 @@
       <button type="submit" id="submitBtn">Enviar registro</button>
     </form>
 
-    <div class="success-message" id="successMessage">✓ Formulario enviado correctamente</div>
+    <div class="success-message" id="successMessage">✓ Form submitted successfully</div>
   </div>
 
   <script>
     const form = document.getElementById('guestForm');
     const successMessage = document.getElementById('successMessage');
+    const guestTableBody = document.querySelector('#guestTable tbody');
+
+    function createGuestRow(index) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input name="nrua_${index}" type="text" placeholder="Ex: ABC123" />
+        </td>
+        <td>
+          <input name="finalidad_${index}" type="text" placeholder="Ex: Tourism" />
+        </td>
+        <td>
+          <input name="numHuespedes_${index}" type="number" min="0" step="1" placeholder="Ex: 2" />
+        </td>
+        <td>
+          <input name="fechaEntrada_${index}" type="text" pattern="^\\d{2}\\.\\d{2}\\.\\d{4}$" placeholder="dd.mm.aaaa" />
+        </td>
+        <td>
+          <input name="fechaSalida_${index}" type="text" pattern="^\\d{2}\\.\\d{2}\\.\\d{4}$" placeholder="dd.mm.aaaa" />
+        </td>
+        <td class="checkbox-cell">
+          <input name="sinActividad_${index}" type="checkbox" />
+        </td>
+      `;
+      return tr;
+    }
+
+    for (let rowIndex = 2; rowIndex <= 88; rowIndex++) {
+      guestTableBody.appendChild(createGuestRow(rowIndex));
+    }
+
+    document.getElementById('rowCount').textContent = `Rows: ${guestTableBody.rows.length}`;
 
     form.addEventListener('submit', (event) => {
       event.preventDefault();
