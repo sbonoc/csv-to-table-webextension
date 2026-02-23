@@ -36,8 +36,14 @@ Thumbs.db
 # Test coverage
 coverage/
 .nyc_output/
+.vitest/
+
+# Playwright
+test-results/
+playwright-report/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+

@@ -7,10 +7,25 @@
   "scripts": {
     "start": "web-ext run",
     "build": "web-ext build",
-    "lint": "web-ext lint"
+    "lint": "web-ext lint",
+    "test": "vitest",
+    "test:unit": "vitest run --reporter=verbose",
+    "test:integration": "vitest run --reporter=verbose src/**/*.integration.test.js",
+    "test:e2e": "playwright test",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "web-ext": "^7.10.0"
+    "web-ext": "^7.10.0",
+    "vitest": "^0.34.0",
+    "@testing-library/dom": "^9.3.3",
+    "@testing-library/user-event": "^14.5.1",
+    "@vitest/ui": "^0.34.0",
+    "@vitest/coverage-v8": "^0.34.0",
+    "happy-dom": "^12.10.3",
+    "webextension-polyfill": "^0.10.0",
+    "playwright": "^1.40.0",
+    "@playwright/test": "^1.40.0"
   },
   "repository": {
     "type": "git",
