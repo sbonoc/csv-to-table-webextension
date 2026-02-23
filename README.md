@@ -109,16 +109,16 @@ src/
 ├── domain/                  # Business logic & entities
 │   ├── csv-parser.js       # CSV parsing and validation
 │   ├── mapping.js          # Column mapping configuration
-│   └── table-handler.js    # HTML form field extraction & filling
+│   ├── table-handler.js    # HTML form field extraction & filling
+│   └── *.test.js           # Domain tests
 │
-│
-└── presentation/            # User interface & messaging
-    ├── popup/
+└── presentation/            # User interface & messaging layer
+    ├── popup/              # Popup UI component
     │   ├── popup.html      # Popup UI markup
     │   ├── popup.css       # Popup styling
     │   └── popup.js        # Popup logic with service integration
-    ├── background.js       # Background script persistence & messaging
-    └── content-script.js   # Content script for web page context
+    ├── background.js       # Background script (persistence & messaging)
+    └── content-script.js   # Content script (webpage integration)
 
 tests/
 ├── unit/                   # Unit tests for domain logic
