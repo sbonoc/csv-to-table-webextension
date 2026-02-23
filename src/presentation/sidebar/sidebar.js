@@ -41,6 +41,11 @@ const fillTableBtn = document.getElementById('fill-table');
 const clearMappingBtn = document.getElementById('clear-mapping');
 const statusMessage = document.getElementById('status-message');
 
+function setButtonA11yState(button, disabled) {
+    button.disabled = disabled;
+    button.setAttribute('aria-disabled', String(disabled));
+}
+
 function getHighlightHue(columnIndex) {
     return (columnIndex * 47) % 360;
 }
@@ -57,6 +62,7 @@ function clearMappingHighlights() {
     const mappingRows = mappingContainer.querySelectorAll('.mapping-row');
     mappingRows.forEach(row => {
         row.classList.remove('is-mapped');
+        row.removeAttribute('data-mapping-state');
         row.style.borderLeftColor = 'transparent';
         row.style.backgroundColor = '';
     });
@@ -90,6 +96,7 @@ function applyMappingHighlights() {
 
         if (row) {
             row.classList.add('is-mapped');
+            row.setAttribute('data-mapping-state', t('mappedBadge'));
             row.style.borderLeftColor = color;
             row.style.backgroundColor = background;
         }
@@ -177,7 +184,7 @@ function renderCSVSample(csvData) {
     const rowsForProcessing = getRowsForProcessing(csvData);
     const previewRows = rowsForProcessing.slice(0, 5);
     const headerCells = csvData.headers
-        .map((header, index) => `<th data-col-index="${index}">${header}</th>`)
+        .map((header, index) => `<th scope="col" data-col-index="${index}">${header}</th>`)
         .join('');
 
     const bodyRows = previewRows.length > 0
@@ -193,6 +200,7 @@ function renderCSVSample(csvData) {
 
     csvSampleContainer.innerHTML = `
         <table class="sample-table">
+            <caption class="sr-only">${t('csvPreviewCaption', { rows: previewRows.length, columns: csvData.headers.length })}</caption>
             <thead>
                 <tr>${headerCells}</tr>
             </thead>
@@ -211,12 +219,22 @@ function renderCSVSample(csvData) {
 function showStatus(message, type = 'info', duration = 3000) {
     statusMessage.textContent = message;
     statusMessage.className = `status-message show ${type}`;
+    statusMessage.setAttribute('aria-hidden', 'false');
+
+    if (type === 'error') {
+        statusMessage.setAttribute('role', 'alert');
+        statusMessage.setAttribute('aria-live', 'assertive');
+    } else {
+        statusMessage.setAttribute('role', 'status');
+        statusMessage.setAttribute('aria-live', 'polite');
+    }
 
     logger.debug(`Status: ${message}`, { type });
 
     if (duration > 0) {
         setTimeout(() => {
             statusMessage.classList.remove('show');
+            statusMessage.setAttribute('aria-hidden', 'true');
         }, duration);
     }
 }
@@ -247,7 +265,7 @@ csvFileInput.addEventListener('change', async (e) => {
 
         renderCSVSample(csvData);
         renderMappingUI();
-        saveMappingBtn.disabled = false;
+        setButtonA11yState(saveMappingBtn, false);
         showStatus(t('csvLoaded', { columns: csvData.headers.length, rows: csvData.rows.length }), 'success');
     } catch (error) {
         logger.error('CSV file error', error);
@@ -276,9 +294,13 @@ function renderMappingUI() {
         row.className = 'mapping-row';
 
         const label = document.createElement('label');
+        const selectId = `mapping-select-${index}`;
+        label.setAttribute('for', selectId);
         label.textContent = `${header}:`;
 
         const select = document.createElement('select');
+        select.id = selectId;
+        select.setAttribute('aria-label', `${t('mappingSelectLabelPrefix')} ${header}`);
         select.setAttribute('data-csv-column', String(index));
         select.appendChild(createDefaultFieldOption());
         select.addEventListener('change', applyMappingHighlights);
@@ -414,7 +436,7 @@ saveMappingBtn.addEventListener('click', async () => {
         });
 
         logger.info('Mapping saved successfully');
-        fillTableBtn.disabled = false;
+        setButtonA11yState(fillTableBtn, false);
         showStatus(t('mappingSaved'), 'success');
     } catch (error) {
         logger.error('Mapping save error', error);
@@ -496,8 +518,9 @@ clearMappingBtn.addEventListener('click', async () => {
         clearMappingHighlights();
         highlightTargetTableInPage(false);
         statusMessage.classList.remove('show');
-        fillTableBtn.disabled = true;
-        saveMappingBtn.disabled = true;
+        statusMessage.setAttribute('aria-hidden', 'true');
+        setButtonA11yState(fillTableBtn, true);
+        setButtonA11yState(saveMappingBtn, true);
 
         logger.info('Mapping cleared');
         showStatus(t('mappingCleared'), 'info', 2000);
@@ -518,8 +541,8 @@ async function initializeSidebar() {
         // Load saved mapping if exists
         const mapping = await storage.getMappingConfig();
         if (mapping && Object.keys(mapping).length > 0) {
-            fillTableBtn.disabled = false;
-            saveMappingBtn.disabled = false;
+            setButtonA11yState(fillTableBtn, false);
+            setButtonA11yState(saveMappingBtn, false);
         }
 
         // Try to detect tables on current page
@@ -532,6 +555,10 @@ async function initializeSidebar() {
 }
 
 document.addEventListener('DOMContentLoaded', initializeSidebar);
+
+setButtonA11yState(saveMappingBtn, saveMappingBtn.disabled);
+setButtonA11yState(fillTableBtn, fillTableBtn.disabled);
+setButtonA11yState(clearMappingBtn, clearMappingBtn.disabled);
 
 tableSelect.addEventListener('change', () => {
     populateMappingSelects();

@@ -7,43 +7,45 @@
     <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
-    <div class="container">
-        <h1 data-i18n="title">CSV to Table Filler</h1>
+    <main class="container" id="main-content" aria-labelledby="sidebar-title">
+        <h1 id="sidebar-title" data-i18n="title">CSV to Table Filler</h1>
 
-        <div class="section">
+        <section class="section" aria-labelledby="csv-upload-title">
+            <h2 class="sr-only" id="csv-upload-title">CSV Upload</h2>
             <label for="csv-file" data-i18n="selectCsvFile">Select CSV File:</label>
             <input type="file" id="csv-file" accept=".csv" />
-        </div>
+        </section>
 
-        <div class="section">
-            <h2 data-i18n="csvSample">CSV Sample</h2>
-            <p class="hint" data-i18n="csvHeaderHint">The first CSV row is interpreted as headers.</p>
+        <section class="section" aria-labelledby="csv-sample-title">
+            <h2 id="csv-sample-title" data-i18n="csvSample">CSV Sample</h2>
+            <p class="hint" id="csv-header-hint" data-i18n="csvHeaderHint">The first CSV row is interpreted as headers.</p>
             <label class="checkbox-option" for="first-row-as-data">
                 <input type="checkbox" id="first-row-as-data" />
                 <span data-i18n="firstRowAsData">Use first row as data (headerless CSV)</span>
             </label>
-            <div id="csv-sample-container">
+            <div id="csv-sample-container" role="region" aria-live="polite" aria-atomic="true" aria-describedby="csv-header-hint" tabindex="0">
                 <p class="placeholder" data-i18n="csvPreviewPlaceholder">Load a CSV file to preview parsed rows</p>
             </div>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2 data-i18n="columnMapping">Column Mapping</h2>
-            <p class="hint" data-i18n="mappingHint">Fields are detected from the first editable row of the target table.</p>
-            <div id="mapping-container">
+        <section class="section" aria-labelledby="mapping-title">
+            <h2 id="mapping-title" data-i18n="columnMapping">Column Mapping</h2>
+            <p class="hint" id="mapping-hint" data-i18n="mappingHint">Fields are detected from the first editable row of the target table.</p>
+            <div id="mapping-container" role="group" aria-describedby="mapping-hint">
                 <p class="placeholder" data-i18n="mappingPlaceholder">Load a CSV file to configure mapping</p>
             </div>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2 data-i18n="availableTables">Available Tables</h2>
+        <section class="section" aria-labelledby="table-title">
+            <h2 id="table-title" data-i18n="availableTables">Available Tables</h2>
+            <label for="table-select" class="sr-only" data-i18n="tableSelectLabel">Target table</label>
             <select id="table-select">
                 <option value="" data-i18n="selectTable">Select a table...</option>
             </select>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2 data-i18n="dateTransform">Date Transform</h2>
+        <section class="section" aria-labelledby="date-transform-title">
+            <h2 id="date-transform-title" data-i18n="dateTransform">Date Transform</h2>
             <label for="date-format-select" data-i18n="dateOutputFormat">Date output format:</label>
             <select id="date-format-select">
                 <option value="auto" data-i18n="dateAuto">Auto (based on target field)</option>
@@ -53,16 +55,16 @@
                 <option value="yyyy-mm-dd">yyyy-mm-dd</option>
             </select>
             <p class="hint" data-i18n="dateHint">Applied during fill when date-like values are detected.</p>
-        </div>
+        </section>
 
-        <div class="section buttons">
+        <section class="section buttons" aria-label="Actions">
             <button id="save-mapping" class="btn btn-primary" disabled data-i18n="saveMapping">Save Mapping</button>
             <button id="fill-table" class="btn btn-secondary" disabled data-i18n="fillTable">Fill Table</button>
             <button id="clear-mapping" class="btn btn-danger" data-i18n="clearMapping">Clear Mapping</button>
-        </div>
+        </section>
 
-        <div id="status-message" class="status-message"></div>
-    </div>
+        <div id="status-message" class="status-message" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true"></div>
+    </main>
 
     <script type="module" src="sidebar.js"></script>
 </body>

@@ -161,6 +161,7 @@ The project uses a **Test Pyramid** approach with clear separation:
 - **Unit Tests** (84%): Tests in `tests/unit/` covering individual functions with fast feedback
 - **Integration Tests** (7%): Tests in `tests/integration/` covering module interactions and workflows  
 - **E2E Tests** (9%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
+- **Accessibility Test**: Automated Axe Core scan focused on sidebar UI (`tests/e2e/accessibility.spec.js`)
 
 **Current Test Inventory:** 167 automated tests (140 unit, 12 integration, 15 E2E)
 
@@ -176,7 +177,10 @@ npm run test:integration
 # E2E tests with Playwright and Firefox
 npm run test:e2e
 
-# All tests with consolidated report
+# Accessibility test (Axe Core) for sidebar UI
+npm run test:a11y
+
+# Core automated suite with consolidated report
 npm run test:all
 
 # Watch mode for development
@@ -202,7 +206,10 @@ Current targets:
 npm start           # Run extension in Firefox
 npm run build       # Build for distribution
 npm run lint        # Lint with web-ext
-npm run test        # Run all tests
+npm run test        # Run Vitest suites (unit + integration)
+npm run test:e2e    # Run Playwright end-to-end tests
+npm run test:a11y   # Run Axe Core accessibility test for sidebar UI
+npm run test:all    # Run unit + integration + E2E + consolidated report
 npm run test:watch  # Watch mode
 ```
 
@@ -221,6 +228,7 @@ The codebase follows:
 - **Vitest**: Unit testing framework
 - **Happy-DOM**: DOM simulation for unit tests
 - **Playwright**: E2E testing with Firefox
+- **Axe Core**: Automated WCAG 2.1 accessibility checks for the sidebar UI
 - **WebExtensions API**: Firefox add-on development
 - **ES6+ Modules**: Modern JavaScript
 
