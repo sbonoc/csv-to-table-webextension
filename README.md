@@ -150,11 +150,11 @@ package.json               # Dependencies and scripts
 
 The project uses a **Test Pyramid** approach with clear separation:
 
-- **Unit Tests** (70%): Tests in `tests/unit/` covering individual functions with fast feedback
+- **Unit Tests** (54%): Tests in `tests/unit/` covering individual functions with fast feedback
 - **Integration Tests** (20%): Tests in `tests/integration/` covering module interactions and workflows  
-- **E2E Tests** (10%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
+- **E2E Tests** (25%): Tests in `tests/e2e/` covering complete user journeys with Playwright + Firefox
 
-**Current Coverage:** 143 automated tests (96 unit + integration, 32 infrastructure, 15 E2E)
+**Current Coverage:** 59 automated tests (32 unit, 12 integration, 15 E2E)
 
 ### Run Tests
 
@@ -332,9 +332,9 @@ The project includes **automated GitHub Actions** that:
 ### Automatic Testing & Building
 - Runs on every push to `main` and `develop` branches
 - Tests on multiple Node.js versions (18.x, 20.x)
-- **Unit tests** (70%): 96 tests for individual functions
-- **Integration tests** (20%): 32 tests for module interactions  
-- **E2E tests** (10%): 15 tests for complete user workflows in real Firefox browser
+- **Unit tests** (54%): 32 tests for individual functions
+- **Integration tests** (20%): 12 tests for module interactions  
+- **E2E tests** (25%): 15 tests for complete user workflows in real Firefox browser
 
 ### Test Report with Test Pyramid
 
@@ -342,12 +342,9 @@ After each workflow run, the job summary displays a detailed table:
 
 | Type | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | ⏱️ Duration |
 |------|-------|----------|----------|-----------|-----------|
-| 🏗️ Unit | 96 | 96 | 0 | 0 | ~1.50s |
-| 📦 Integration | 32 | 32 | 0 | 0 | ~8.00s |
-| 🎯 E2E | 15 | 15 | 0 | 0 | ~9.00s |
-
-**What you see:**
-- Test count by type
+| 🏗️ Unit | 32 | 32 | 0 | 0 | ~0.01s |
+| 📦 Integration | 12 | 12 | 0 | 0 | ~0.01s |
+| 🎯 E2E | 15 | 15 | 0 | 0 | ~7.00s |
 - Pass/fail/skip statistics  
 - Execution time per test type
 - Success rate and total duration
@@ -441,7 +438,7 @@ Please include:
 
 - **Lines of Code**: ~2,000 (core logic)
 - **Test Coverage**: 80%+ 
-- **Testing**: 143 automated tests (unit + integration + E2E)
+- **Testing**: 59 automated tests (32 unit + 12 integration + 15 E2E)
 - **Documentation**: Comprehensive inline comments
 - **Performance**: < 500ms for typical operations
 

@@ -67,26 +67,37 @@ function parsePlaywrightReport(filePath) {
     let skipped = 0;
     let duration = 0;
 
+    // Playwright JSON structure: suites -> suites -> specs -> tests -> results
     if (data.suites && Array.isArray(data.suites)) {
       function traverseSuites(suites) {
         suites.forEach(suite => {
-          if (suite.tests && Array.isArray(suite.tests)) {
-            suite.tests.forEach(test => {
-              switch (test.status) {
-                case 'passed':
-                  passed++;
-                  break;
-                case 'failed':
-                  failed++;
-                  break;
-                case 'skipped':
-                  skipped++;
-                  break;
+          // Handle specs (tests) in current suite
+          if (suite.specs && Array.isArray(suite.specs)) {
+            suite.specs.forEach(spec => {
+              if (spec.tests && Array.isArray(spec.tests)) {
+                spec.tests.forEach(test => {
+                  if (test.results && Array.isArray(test.results)) {
+                    test.results.forEach(result => {
+                      switch (result.status) {
+                        case 'passed':
+                          passed++;
+                          break;
+                        case 'failed':
+                          failed++;
+                          break;
+                        case 'skipped':
+                          skipped++;
+                          break;
+                      }
+                      duration += result.duration || 0;
+                    });
+                  }
+                });
               }
-              duration += test.duration || 0;
             });
           }
-          if (suite.suites) {
+          // Recursively handle nested suites
+          if (suite.suites && Array.isArray(suite.suites)) {
             traverseSuites(suite.suites);
           }
         });
@@ -242,7 +253,7 @@ function main() {
 
   const unitPath = path.join(resultsDir, 'unit.json');
   const integrationPath = path.join(resultsDir, 'integration.json');
-  const e2ePath = path.join(resultsDir, 'e2e.json');
+  const e2ePath = path.join(resultsDir, 'e2e-results.json');
 
   // Parse reports
   const unitReport = fs.existsSync(unitPath) ? parseVitestReport(unitPath) : { passed: 0, failed: 0, skipped: 0, total: 0, duration: 0 };

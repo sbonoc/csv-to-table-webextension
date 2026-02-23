@@ -10,7 +10,7 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,  // Single worker for extension testing
-  reporter: [['html'], ['json', { outputFile: 'test-results/e2e.json' }]],
+  reporter: [['json', { outputFile: 'test-results/e2e-results.json' }]],
   timeout: 30000,  // 30s timeout for E2E tests
   use: {
     baseURL: `http://localhost:${PORT}`,
