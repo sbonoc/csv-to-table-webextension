@@ -305,6 +305,39 @@ Contributions are welcome! Here's how:
 
 MIT License - see LICENSE file for details
 
+## 🚀 Continuous Integration & Deployment
+
+The project includes automated GitHub Actions that:
+
+1. **Test** automatically on every push (Unit, Integration, E2E)
+2. **Build** the extension to `.xpi` file
+3. **Report** test results with Test Pyramid visualization
+4. **Release** automatically when you push a version tag
+
+### Test Results Dashboard
+
+After each test run, GitHub Actions displays:
+- Test count by type (Unit, Integration, E2E)
+- Pass/fail/skip statistics
+- Execution time per test type
+- Visual Test Pyramid
+
+### Creating a Release
+
+```bash
+# Create and push a version tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This automatically:
+- ✅ Tests the code
+- ✅ Builds the `.xpi` file
+- ✅ Creates a GitHub Release
+- ✅ Makes it downloadable for users
+
+For detailed guide, see [CICD_GUIDE.md](CICD_GUIDE.md)
+
 ## 🚀 Roadmap
 
 Current version: **1.0.0**
