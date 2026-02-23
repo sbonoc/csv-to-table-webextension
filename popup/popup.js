@@ -1,49 +1,90 @@
-// Status message helper
+/**
+ * Popup Script
+ * Handles user interaction and CSV mapping configuration
+ */
+
+import {
+    Container,
+    Logger
+} from '../src/infrastructure/index.js';
+
+import {
+    parseCSV,
+    validateCSVData
+} from '../src/csv-parser.js';
+
+// Initialize container and services
+const container = new Container();
+container.initializeDefaultServices();
+
+const logger = container.get('logger');
+const storage = container.get('storage');
+
+logger.info('Popup initializing...');
+
+// UI Elements
+const csvFileInput = document.getElementById('csv-file');
+const mappingContainer = document.getElementById('mapping-container');
+const tableSelect = document.getElementById('table-select');
+const saveMappingBtn = document.getElementById('save-mapping');
+const fillTableBtn = document.getElementById('fill-table');
+const clearMappingBtn = document.getElementById('clear-mapping');
+const statusMessage = document.getElementById('status-message');
+
+/**
+ * Show status message to user
+ */
 function showStatus(message, type = 'info', duration = 3000) {
-    const statusEl = document.getElementById('status-message');
-    statusEl.textContent = message;
-    statusEl.className = `status-message show ${type}`;
+    statusMessage.textContent = message;
+    statusMessage.className = `status-message show ${type}`;
+    
+    logger.debug(`Status: ${message}`, { type });
     
     if (duration > 0) {
         setTimeout(() => {
-            statusEl.classList.remove('show');
+            statusMessage.classList.remove('show');
         }, duration);
     }
 }
 
-// CSV file loading
-document.getElementById('csv-file').addEventListener('change', async (e) => {
+/**
+ * Handle CSV file selection
+ */
+csvFileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-        const text = await file.text();
-        const rows = text.split('\n').filter(line => line.trim());
+        logger.debug('CSV file selected', { name: file.name, size: file.size });
         
-        if (rows.length === 0) {
-            showStatus('CSV file is empty', 'error');
-            return;
-        }
+        const text = await file.text();
+        
+        // Parse and validate CSV
+        const csvData = parseCSV(text);
+        validateCSVData(csvData);
+        
+        // Store in popup memory
+        window.csvData = csvData;
+        
+        logger.info('CSV loaded successfully', {
+            headers: csvData.headers.length,
+            rows: csvData.rows.length
+        });
 
-        // Store CSV data in popup state
-        window.csvData = {
-            headers: rows[0].split(',').map(h => h.trim()),
-            rows: rows.slice(1).map(row => row.split(',').map(val => val.trim()))
-        };
-
-        renderMappingUi();
-        showStatus(`CSV loaded: ${window.csvData.headers.length} columns`, 'success');
+        renderMappingUI();
+        showStatus(`✓ CSV loaded: ${csvData.headers.length} columns, ${csvData.rows.length} rows`, 'success');
     } catch (error) {
-        showStatus(`Error reading file: ${error.message}`, 'error');
+        logger.error('CSV file error', error);
+        showStatus(`✗ Error: ${error.message}`, 'error');
     }
 });
 
-// Render mapping UI based on CSV headers
-function renderMappingUi() {
-    const container = document.getElementById('mapping-container');
-    
+/**
+ * Render mapping configuration UI
+ */
+function renderMappingUI() {
     if (!window.csvData || !window.csvData.headers.length) {
-        container.innerHTML = '<p class="placeholder">Load a CSV file to configure mapping</p>';
+        mappingContainer.innerHTML = '<p class="placeholder">Load a CSV file to configure mapping</p>';
         return;
     }
 
@@ -61,69 +102,64 @@ function renderMappingUi() {
         `;
     });
 
-    container.innerHTML = html;
+    mappingContainer.innerHTML = html;
     loadTableFields();
 }
 
-// Load available fields from tables on the page
+/**
+ * Load available fields from tables on the current page
+ */
 async function loadTableFields() {
     try {
+        logger.debug('Loading table fields from active tab...');
+        
         const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-        const results = await browser.tabs.executeScript(tab.id, {
-            code: `
-                (function() {
-                    const tables = document.querySelectorAll('table, form, [role="table"]');
-                    const tables_info = [];
-                    
-                    tables.forEach((table, idx) => {
-                        const fields = [];
-                        
-                        // Get input fields
-                        table.querySelectorAll('input, textarea, select').forEach(field => {
-                            const name = field.name || field.id || field.placeholder || 'unnamed';
-                            fields.push(name);
-                        });
-                        
-                        tables_info.push({
-                            index: idx,
-                            name: \`Table \${idx + 1}\`,
-                            fields: fields
-                        });
-                    });
-                    
-                    return tables_info;
-                })();
-            `
+        
+        // Execute content script to get table info
+        const results = await browser.tabs.sendMessage(tab.id, {
+            action: 'getTableInfo'
         });
 
-        if (results && results[0]) {
-            window.tableFields = results[0];
+        if (results.success && results.tables) {
+            window.tableFields = results.tables;
             populateTableSelect();
             populateMappingSelects();
+            
+            logger.info('Table fields loaded', { count: results.tables.length });
+        } else {
+            throw new Error(results.error || 'Failed to load table info');
         }
     } catch (error) {
-        console.error('Error loading table fields:', error);
-        showStatus('Could not detect tables on this page', 'warning');
+        logger.warn('Table loading error', error);
+        showStatus('⚠ Could not detect tables on this page', 'warning');
     }
 }
 
-// Populate table selection dropdown
+/**
+ * Populate table selection dropdown
+ */
 function populateTableSelect() {
-    const select = document.getElementById('table-select');
-    const option = select.querySelector('option[value=""]');
+    // Clear existing options except first
+    while (tableSelect.options.length > 1) {
+        tableSelect.remove(1);
+    }
     
     if (window.tableFields && window.tableFields.length > 0) {
         window.tableFields.forEach(table => {
             const opt = document.createElement('option');
             opt.value = table.index;
-            opt.textContent = table.name;
-            select.appendChild(opt);
+            opt.textContent = `${table.name} (${table.fieldsCount} fields)`;
+            tableSelect.appendChild(opt);
         });
-        select.value = window.tableFields[0].index;
+        
+        tableSelect.value = window.tableFields[0].index;
+        logger.debug('Table select populated', { count: window.tableFields.length });
     }
 }
 
-// Populate mapping select dropdowns with available fields
+/**
+ * Populate mapping select dropdowns with available fields
+ */
 function populateMappingSelects() {
     const selects = document.querySelectorAll('[data-csv-column]');
     
@@ -132,114 +168,162 @@ function populateMappingSelects() {
         select.innerHTML = '<option value="">-- Select target field --</option>';
         
         if (window.tableFields && window.tableFields.length > 0) {
-            const fields = window.tableFields[0].fields || [];
-            fields.forEach(field => {
-                const opt = document.createElement('option');
-                opt.value = field;
-                opt.textContent = field;
-                select.appendChild(opt);
-            });
+            const selectedTableIndex = parseInt(tableSelect.value) || 0;
+            const table = window.tableFields[selectedTableIndex];
+            
+            if (table && table.fields) {
+                table.fields.forEach(field => {
+                    const opt = document.createElement('option');
+                    opt.value = field.name;
+                    opt.textContent = field.name;
+                    select.appendChild(opt);
+                });
+            }
         }
         
         select.value = currentValue;
     });
 }
 
-// Save mapping configuration
-document.getElementById('save-mapping').addEventListener('click', async () => {
-    const mapping = {};
-    const selects = document.querySelectorAll('[data-csv-column]');
-    
-    selects.forEach(select => {
-        const csvCol = select.dataset.csvColumn;
-        const target = select.value;
-        if (target) {
-            mapping[csvCol] = target;
-        }
-    });
-
-    if (Object.keys(mapping).length === 0) {
-        showStatus('Please configure at least one mapping', 'warning');
-        return;
-    }
-
+/**
+ * Save mapping configuration
+ */
+saveMappingBtn.addEventListener('click', async () => {
     try {
-        await browser.storage.local.set({
-            csvMapping: mapping,
-            lastCSVHeaders: window.csvData.headers,
-            mappedTableIndex: document.getElementById('table-select').value
+        if (!window.csvData || !window.csvData.headers.length) {
+            showStatus('Please load a CSV file first', 'warning');
+            return;
+        }
+
+        const mapping = {};
+        const selects = document.querySelectorAll('[data-csv-column]');
+        
+        selects.forEach(select => {
+            const csvCol = select.dataset.csvColumn;
+            const target = select.value;
+            if (target) {
+                mapping[csvCol] = target;
+            }
         });
-        showStatus('Mapping saved successfully!', 'success');
-        document.getElementById('fill-table').disabled = false;
+
+        if (Object.keys(mapping).length === 0) {
+            showStatus('Please configure at least one mapping', 'warning');
+            return;
+        }
+
+        logger.debug('Saving mapping configuration', { mappingKeys: Object.keys(mapping).length });
+
+        // Use StorageRepository to save
+        await storage.saveMappingConfig(mapping);
+        
+        // Store additional metadata
+        await browser.storage.local.set({
+            lastCSVHeaders: window.csvData.headers,
+            mappedTableIndex: tableSelect.value
+        });
+
+        logger.info('Mapping saved successfully');
+        fillTableBtn.disabled = false;
+        showStatus('✓ Mapping saved successfully!', 'success');
     } catch (error) {
-        showStatus(`Error saving mapping: ${error.message}`, 'error');
+        logger.error('Mapping save error', error);
+        showStatus(`✗ Error saving mapping: ${error.message}`, 'error');
     }
 });
 
-// Fill table with CSV data
-document.getElementById('fill-table').addEventListener('click', async () => {
-    if (!window.csvData) {
-        showStatus('Please load a CSV file first', 'warning');
-        return;
-    }
-
+/**
+ * Fill table with CSV data
+ */
+fillTableBtn.addEventListener('click', async () => {
     try {
-        const stored = await browser.storage.local.get(['csvMapping']);
-        if (!stored.csvMapping) {
+        if (!window.csvData || !window.csvData.rows.length) {
+            showStatus('Please load a CSV file first', 'warning');
+            return;
+        }
+
+        logger.debug('Filling table with CSV data');
+
+        const mapping = await storage.getMappingConfig();
+        
+        if (!mapping || Object.keys(mapping).length === 0) {
             showStatus('Please save a mapping first', 'warning');
             return;
         }
 
         const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-        const tableIndex = document.getElementById('table-select').value;
-        
-        await browser.tabs.executeScript(tab.id, {
-            code: `
-                (function() {
-                    const mapping = ${JSON.stringify(stored.csvMapping)};
-                    const csvData = ${JSON.stringify(window.csvData)};
-                    const tableIndex = ${tableIndex};
-                    
-                    // TODO: Implement table filling logic
-                    console.log('Filling table with mapping:', mapping);
-                })();
-            `
+        const tableIndex = parseInt(tableSelect.value) || 0;
+        const firstRow = window.csvData.rows[0];
+
+        // Send fill request to content script
+        const result = await browser.tabs.sendMessage(tab.id, {
+            action: 'fillTable',
+            data: {
+                tableIndex: tableIndex,
+                mapping: mapping,
+                csvRow: firstRow
+            }
         });
 
-        showStatus('Table filled successfully!', 'success');
+        if (result.success) {
+            logger.info('Table filled successfully', { filled: result.filled });
+            showStatus(`✓ ${result.message}`, 'success');
+        } else {
+            logger.warn('Fill operation partially failed', { error: result.error });
+            showStatus(`✗ ${result.message}`, 'error');
+        }
     } catch (error) {
-        showStatus(`Error filling table: ${error.message}`, 'error');
+        logger.error('Table fill error', error);
+        showStatus(`✗ Error filling table: ${error.message}`, 'error');
     }
 });
 
-// Clear mapping
-document.getElementById('clear-mapping').addEventListener('click', async () => {
+/**
+ * Clear mapping configuration
+ */
+clearMappingBtn.addEventListener('click', async () => {
     try {
-        await browser.storage.local.remove(['csvMapping', 'lastCSVHeaders']);
-        document.getElementById('csv-file').value = '';
-        document.getElementById('table-select').value = '';
-        document.getElementById('mapping-container').innerHTML = 
-            '<p class="placeholder">Load a CSV file to configure mapping</p>';
-        document.getElementById('status-message').classList.remove('show');
+        logger.debug('Clearing mapping configuration');
+        
+        await storage.saveMappingConfig({});
+        await browser.storage.local.remove(['lastCSVHeaders', 'mappedTableIndex']);
+        
+        csvFileInput.value = '';
+        tableSelect.value = '';
+        mappingContainer.innerHTML = '<p class="placeholder">Load a CSV file to configure mapping</p>';
+        statusMessage.classList.remove('show');
+        fillTableBtn.disabled = true;
+        saveMappingBtn.disabled = true;
+
+        logger.info('Mapping cleared');
         showStatus('Mapping cleared', 'info', 2000);
     } catch (error) {
-        showStatus(`Error clearing mapping: ${error.message}`, 'error');
+        logger.error('Clear error', error);
+        showStatus(`✗ Error clearing mapping: ${error.message}`, 'error');
     }
 });
 
-// Initialize on popup open
-document.addEventListener('DOMContentLoaded', async () => {
+/**
+ * Initialize popup on load
+ */
+async function initializePopup() {
     try {
+        logger.debug('Initializing popup...');
+        
         // Load saved mapping if exists
-        const stored = await browser.storage.local.get(['csvMapping']);
-        if (stored.csvMapping) {
-            document.getElementById('fill-table').disabled = false;
-            document.getElementById('save-mapping').disabled = false;
+        const mapping = await storage.getMappingConfig();
+        if (mapping && Object.keys(mapping).length > 0) {
+            fillTableBtn.disabled = false;
+            saveMappingBtn.disabled = false;
         }
         
         // Try to detect tables on current page
-        await loadTableFields();
+        loadTableFields();
+        
+        logger.info('Popup initialized');
     } catch (error) {
-        console.error('Error during initialization:', error);
+        logger.error('Popup initialization error', error);
     }
-});
+}
+
+document.addEventListener('DOMContentLoaded', initializePopup);
+

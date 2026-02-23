@@ -3,6 +3,10 @@
  * Handles CSV parsing and validation
  */
 
+import { Logger } from './infrastructure/logger.js';
+
+const logger = new Logger('CSVParser');
+
 /**
  * Parse CSV content into rows and headers
  * @param {string} csvContent - Raw CSV content
