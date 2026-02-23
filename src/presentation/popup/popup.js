@@ -31,6 +31,20 @@ const fillTableBtn = document.getElementById('fill-table');
 const clearMappingBtn = document.getElementById('clear-mapping');
 const statusMessage = document.getElementById('status-message');
 
+function renderMappingPlaceholder() {
+    const placeholder = document.createElement('p');
+    placeholder.className = 'placeholder';
+    placeholder.textContent = 'Load a CSV file to configure mapping';
+    mappingContainer.replaceChildren(placeholder);
+}
+
+function createDefaultFieldOption() {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '-- Select target field --';
+    return option;
+}
+
 /**
  * Show status message to user
  */
@@ -84,25 +98,28 @@ csvFileInput.addEventListener('change', async (e) => {
  */
 function renderMappingUI() {
     if (!window.csvData || !window.csvData.headers.length) {
-        mappingContainer.innerHTML = '<p class="placeholder">Load a CSV file to configure mapping</p>';
+        renderMappingPlaceholder();
         return;
     }
 
     const headers = window.csvData.headers;
-    let html = '';
+    const rows = headers.map((header, index) => {
+        const row = document.createElement('div');
+        row.className = 'mapping-row';
 
-    headers.forEach((header, index) => {
-        html += `
-            <div class="mapping-row">
-                <label>${header}:</label>
-                <select data-csv-column="${index}">
-                    <option value="">-- Select target field --</option>
-                </select>
-            </div>
-        `;
+        const label = document.createElement('label');
+        label.textContent = `${header}:`;
+
+        const select = document.createElement('select');
+        select.setAttribute('data-csv-column', String(index));
+        select.appendChild(createDefaultFieldOption());
+
+        row.appendChild(label);
+        row.appendChild(select);
+        return row;
     });
 
-    mappingContainer.innerHTML = html;
+    mappingContainer.replaceChildren(...rows);
     loadTableFields();
 }
 
@@ -165,7 +182,7 @@ function populateMappingSelects() {
     
     selects.forEach(select => {
         const currentValue = select.value;
-        select.innerHTML = '<option value="">-- Select target field --</option>';
+        select.replaceChildren(createDefaultFieldOption());
         
         if (window.tableFields && window.tableFields.length > 0) {
             const selectedTableIndex = parseInt(tableSelect.value) || 0;
@@ -289,7 +306,7 @@ clearMappingBtn.addEventListener('click', async () => {
         
         csvFileInput.value = '';
         tableSelect.value = '';
-        mappingContainer.innerHTML = '<p class="placeholder">Load a CSV file to configure mapping</p>';
+        renderMappingPlaceholder();
         statusMessage.classList.remove('show');
         fillTableBtn.disabled = true;
         saveMappingBtn.disabled = true;
